@@ -43,12 +43,17 @@ reg [ASIZE:0] wptr;
 reg [ASIZE:0] rptr;
 
 parameter MEMDEPTH = 1<<ASIZE;
+parameter MEMSIZE = 1<<ASIZE-1;
 
 reg [DSIZE-1:0] ex_mem [0:MEMDEPTH-1];
-
+integer i;
 always @(posedge clock or negedge reset)
-        if (!reset) 
-		wptr <= 0;
+        if (!reset) begin
+		wptr <= 6'b10_0000;
+		for (i=0;i<MEMSIZE;i=i+1) begin
+			ex_mem[i]<=i;
+		end
+	end
         else if (RB_Tag_Valid && !tagFifo_full) begin
                 ex_mem[wptr[ASIZE-1:0]] <= RB_Tag;
                 wptr <= wptr+1;
@@ -56,7 +61,7 @@ always @(posedge clock or negedge reset)
 
 always @(posedge clock or negedge reset)
         if (!reset) 
-		rptr <= 0;
+		rptr <= 6'b00_0000;
         else if (Rd_en && !tagFifo_empty) 
 		rptr <= rptr+1;
 
