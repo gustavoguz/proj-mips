@@ -17,82 +17,52 @@
 //-----------------------------------------------------
 
 module tagfifo(
-   input 		clock,
-   input 		reset,
-   input 	[4:0]  	RB_Tag,
-   input 		RB_Tag_Valid,
-   input 		Rd_en,
-   output reg 	[4:0] 	Tag_Out,
-   output reg 		tagFifo_full,
-   output reg 		tagFifo_empty
+   clock,
+   reset,
+   RB_Tag,
+   RB_Tag_Valid,
+   Rd_en,
+   Tag_Out,
+   tagFifo_full,
+   tagFifo_empty
 );
-   parameter DATA_WIDTH = 5;
-   parameter DEPTH      = 32;
 
-   function integer log2;
-      input integer n;
-      begin
-         log2 = 0;
-         while(2**log2 < n) begin
-            log2 = log2 + 1;
-         end
-      end
-   endfunction
+parameter DSIZE = 5;
+parameter ASIZE = 6; // ASIZE = Max_number -1
 
-   parameter ADDR_WIDTH = log2(DEPTH);
-   reg  [ADDR_WIDTH   : 0]  rd_ptr; // note MSB is not really address
-   reg  [ADDR_WIDTH   : 0]  wr_ptr; // note MSB is not really address
-   wire [ADDR_WIDTH-1 : 0]  wr_loc;
-   wire [ADDR_WIDTH-1 : 0]  rd_loc;
-   reg  [DATA_WIDTH-1 : 0]  mem[DEPTH-1 : 0];
+output 	[DSIZE-1:0] 	Tag_Out;
+output 			tagFifo_full;
+output 			tagFifo_empty;
+input 	[DSIZE-1:0] 	RB_Tag;
+input 			RB_Tag_Valid;
+input			clock;
+input			reset;
+input 			Rd_en;
 
-   assign wr_loc = wr_ptr[ADDR_WIDTH-1 : 0];
-   assign rd_loc = rd_ptr[ADDR_WIDTH-1 : 0];
+reg [ASIZE:0] wptr;
+reg [ASIZE:0] rptr;
 
-   always @(posedge clock) begin
-      if (reset) begin
-         wr_ptr <= 'h0;
-         rd_ptr <= 'h0;
-      end else begin
-         if (RB_Tag_Valid & (~tagFifo_full))  wr_ptr <= wr_ptr + 1;
-         if (Rd_en & (~tagFifo_empty)) rd_ptr <= rd_ptr + 1;
-      end
-   end
+parameter MEMDEPTH = 1<<ASIZE;
 
-   // Empty if all the bits of rd_ptr and wr_ptr are the same.
-   // Full if all bits except the MSB are equal and MSB differ.
-   always @(rd_ptr or wr_ptr) begin
-      //default catch-alls
-      tagFifo_empty <= 1'b0;
-      tagFifo_full  <= 1'b0;
-		$display ("wr_ptr=%d, rd_ptr=%d ADDR_WIDTH=%d",wr_ptr,rd_ptr,ADDR_WIDTH);
-      if (rd_ptr[ADDR_WIDTH-1:0] == wr_ptr[ADDR_WIDTH-1:0]) begin
-         if(rd_ptr[ADDR_WIDTH] == wr_ptr[ADDR_WIDTH])
-            begin
-		tagFifo_empty <= 1'b1;
-		$display ("wr_ptr=%d, rd_ptr=%d ADDR_WIDTH=%d",wr_ptr,rd_ptr,ADDR_WIDTH);
-	    end
-         else
-            tagFifo_full  <= 1'b1;
-      end
-   end
+reg [DSIZE-1:0] ex_mem [0:MEMDEPTH-1];
 
-   always @(posedge clock) begin
-      if (RB_Tag_Valid) mem[wr_loc] <= RB_Tag;
-   end
+always @(posedge clock or negedge reset)
+        if (!reset) 
+		wptr <= 0;
+        else if (RB_Tag_Valid && !tagFifo_full) begin
+                ex_mem[wptr[ASIZE-1:0]] <= RB_Tag;
+                wptr <= wptr+1;
+        end
 
-   // Comment out if you want a registered Tag_Out.
-  // always @(*) begin
-   //   Tag_Out = Rd_en ? mem[rd_loc]:'h0;
-   //end
-   // Uncomment if you want a registered Tag_Out.
-   always @(posedge clock) begin
-      if (reset)
-         Tag_Out <= 'h0;
-      else if (Rd_en)
-         Tag_Out <= mem[rd_ptr];
-      else
-         Tag_Out <= Tag_Out;
-   end
+always @(posedge clock or negedge reset)
+        if (!reset) 
+		rptr <= 0;
+        else if (Rd_en && !tagFifo_empty) 
+		rptr <= rptr+1;
+
+assign Tag_Out = ex_mem[rptr[ASIZE-1:0]];
+assign tagFifo_empty = (rptr == wptr);
+assign tagFifo_full = ({~wptr[ASIZE-1], wptr[ASIZE-2:0]} == rptr);
+
+
 endmodule
-
