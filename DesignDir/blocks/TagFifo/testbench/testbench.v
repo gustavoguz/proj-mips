@@ -33,14 +33,18 @@ end
 initial 
 begin
 	clock=0;
-	reset=1;
-#10	reset=0;
+	reset=0;
+#10	reset=1;
+/*
+llenar la fifo:
 	for (i=0;i<33;i=i+1)
 	begin
 #10		RB_Tag_Valid=1;
 		RB_Tag=i;
 		Rd_en=0;
 	end
+*/
+
 #30
 	for (i=0;i<35;i=i+1)
 	begin
