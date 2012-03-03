@@ -58,7 +58,7 @@ close $fp
 
 puts "INFO: mkfile = $DesignDir/blocks/$BLOCK_NAME/tool_info/do.tcl"
 set fp [open $DesignDir/blocks/$BLOCK_NAME/tool_info/do.tcl w]
-puts $fp "add waveosition anchor sim:/testbench/*"
+puts $fp "add wave -position anchor sim:/testbench/*"
 puts $fp "\nrun -all"
 close $fp
 
