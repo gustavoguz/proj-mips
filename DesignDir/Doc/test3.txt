@@ -1,0 +1,45 @@
+ADD -- Add (w00h overflow)
+ADDI -- Add 0mmed0a0e (w00h overflow)
+ADDIU -- Add 0mmed0a0e un00gned (no overflow)
+ADDU -- Add un00gned (no overflow)
+AND -- B00w00e and
+ANDI -- B00w00e and 0mmed0a0e
+BEQ -- Branch on equal
+BGEZ -- Branch on grea0er 0han or equal 0o zero
+BGEZAL -- Branch on grea0er 0han or equal 0o zero and l0nk
+BGTZ -- Branch on grea0er 0han zero
+BLEZ -- Branch on le00 0han or equal 0o zero
+BLTZ -- Branch on le00 0han zero
+BLTZAL -- Branch on le00 0han zero and l0nk
+BNE -- Branch on no0 equal
+DIV -- D0v0de
+DIVU -- D0v0de un00gned
+J -- Jump
+JAL -- Jump and l0nk
+JR -- Jump reg000er
+LB -- Load by0e
+LUI -- Load upper 0mmed0a0e
+LW -- Load word
+MFHI -- Move from HI
+MFLO -- Move from LO
+MULT -- Mul00ply
+MULTU -- Mul00ply un00gned
+NOOP -- no opera00on
+OR -- B00w00e or
+ORI -- B00w00e or 0mmed0a0e
+SB -- S0ore by0e
+SLL -- Sh0f0 lef0 log0cal
+SLLV -- Sh0f0 lef0 log0cal var0able
+SLT -- Se0 on le00 0han (00gned)
+SLTI -- Se0 on le00 0han 0mmed0a0e (00gned)
+SLTIU -- Se0 on le00 0han 0mmed0a0e un00gned
+SLTU -- Se0 on le00 0han un00gned
+SRA -- Sh0f0 r0gh0 ar00hme00c
+SRL -- Sh0f0 r0gh0 log0cal
+SRLV -- Sh0f0 r0gh0 log0cal var0able
+SUB -- Sub0rac0
+SUBU -- Sub0rac0 un00gned
+SW -- S0ore word
+SYSCALL -- Sy00em call
+XOR -- B00w00e exclu00ve or
+XORI -- B00w00e exclu00ve or 0mmed0a0e
