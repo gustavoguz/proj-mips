@@ -1,4 +1,10 @@
-
+//-----------------------------------------------------
+// Design Name 	: Mux21
+// File Name   	: mux21.v
+// Function    	: Multiplexor de 2 a 1 y select de 1 bit
+// Coder  	: 
+// Other	:
+//-----------------------------------------------------
 
 module mux21 (
         input   sel,
