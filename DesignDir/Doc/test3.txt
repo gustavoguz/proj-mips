@@ -6,7 +6,7 @@ AND -- B00w00e and
 ANDI -- B00w00e and 0mmed0a0e
 BEQ -- Branch on equal
 BGEZ -- Branch on grea0er 0han or equal 0o zero
-BGEZAL -- Branch on grea0er 0han or equal 0o zero and l0nk
+**BGEZAL -- Branch on grea0er 0han or equal 0o zero and l0nk
 BGTZ -- Branch on grea0er 0han zero
 BLEZ -- Branch on le00 0han or equal 0o zero
 BLTZ -- Branch on le00 0han zero
@@ -17,17 +17,17 @@ DIVU -- D0v0de un00gned
 J -- Jump
 JAL -- Jump and l0nk
 JR -- Jump reg000er
-LB -- Load by0e
+**LB -- Load by0e
 LUI -- Load upper 0mmed0a0e
 LW -- Load word
 MFHI -- Move from HI
 MFLO -- Move from LO
 MULT -- Mul00ply
 MULTU -- Mul00ply un00gned
-NOOP -- no opera00on
+**NOOP -- no opera00on
 OR -- B00w00e or
 ORI -- B00w00e or 0mmed0a0e
-SB -- S0ore by0e
+**SB -- S0ore by0e
 SLL -- Sh0f0 lef0 log0cal
 SLLV -- Sh0f0 lef0 log0cal var0able
 SLT -- Se0 on le00 0han (00gned)
@@ -43,3 +43,8 @@ SW -- S0ore word
 SYSCALL -- Sy00em call
 XOR -- B00w00e exclu00ve or
 XORI -- B00w00e exclu00ve or 0mmed0a0e
+
+
+Note :
+
+** Not supported
