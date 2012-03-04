@@ -1,4 +1,10 @@
-
+//-----------------------------------------------------
+// Design Name 	: Mux42
+// File Name   	: mux42.v
+// Function    	: Multiplexor de 4  a 1  y select 2 bits
+// Coder  	: 
+// Other	:
+//-----------------------------------------------------
 
 module mux42 (
         input   [1:0]   sel,

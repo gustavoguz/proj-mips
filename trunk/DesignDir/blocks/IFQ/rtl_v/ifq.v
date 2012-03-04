@@ -1,9 +1,18 @@
-// Pc_out: 32bits del program counter (PC) usado para calculo de direcciones de salto
-// Inst: 32 bits del opcode de la instruccin a ser decodificada.
-// Empty: Seal que indica que la IFQ esta vaca
-// Rd_en: Seal de lectura de una instruccin de la IFQ
-// Jmp_branch_address: Nuevo valor que debe tomar el PC, 32 bits
-// Jmp_branch_valid: seal que indica que el valor de jmp_branch_address es vlido.
+//-----------------------------------------------------
+// Design Name 	: IFQ
+// File Name   	: ifq.v
+// Function    	: 
+// 		Pc_out: 32bits del program counter (PC) usado para calculo de direcciones de salto
+// 		Inst: 32 bits del opcode de la instruccin a ser decodificada.
+// 		Empty: Seal que indica que la IFQ esta vaca
+// 		Rd_en: Seal de lectura de una instruccin de la IFQ
+// 		Jmp_branch_address: Nuevo valor que debe tomar el PC, 32 bits
+// 		Jmp_branch_valid: seal que indica que el valor de jmp_branch_address es vlido.
+// Coder  	: 
+// Other	:
+//-----------------------------------------------------
+
+
 
 module ifq (
    input              clk,
