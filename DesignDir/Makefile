@@ -5,7 +5,7 @@ export DESIGN_DIR
 export DEBUG
 
 
-BLOCK_NAME:=Decoder
+BLOCK_NAME:=BranchLogic
 SUB_LIST:=""
 
 test: query_blocks query_blockdir query_rtl query_verilog query_testbench
