@@ -27,12 +27,13 @@ rst rst (
   	.clock(clock),
   	.reset(reset),
 
-  	.Rsaddr_rst(Rsaddr_rst),
-  	.Rstag_rst(Rstag_rst),
-  	.Rsvalid_rst(Rsvalid_rst),
+  	.Rsaddr_rst	(Rsaddr_rst),
+  	.Rstag_rst 	(Rstag_rst),
+  	.Rsvalid_rst	(Rsvalid_rst),
   	
-	.Rttag_rst(Rttag_rst),
-  	.Rtvalid_rst(Rtvalid_rst),
+  	.Rtaddr_rst	(Rtaddr_rst),
+	.Rttag_rst	(Rttag_rst),
+  	.Rtvalid_rst	(Rtvalid_rst),
   
   	.RB_tag_rst(RB_tag_rst),
 	.RB_valid_rst(RB_valid_rst),
@@ -43,6 +44,9 @@ rst rst (
 	.Wen_rst(Wen_rst),
 	.Wen1_rst(Wen1_rst) 
 	);
+
+integer i;
+
 always begin 
 #5	clock=!clock;
 end
@@ -51,6 +55,23 @@ initial  begin
 	clock = 0;
 	reset = 1;
 #10	reset = 0;
+
+// Read all registers 
+for (i=0; i<32; i=i+1) begin
+#5  	Rsaddr_rst=i;
+$display ("$d",i);
+end
+
+for (i=0; i<32; i=i+1) begin
+#10  	Rtaddr_rst=i;
+end
+
+for (i=0; i<32; i=i+1) begin
+#10  	Rsaddr_rst=i;
+  	Rtaddr_rst=i;
+end
+
+
 #30	$finish;
 end
 
