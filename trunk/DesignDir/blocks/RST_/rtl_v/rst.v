@@ -2,7 +2,6 @@
 // Design Name 	: RST
 // File Name   	: rst.v
 // Function    	: 
-
 // Coder  	: 
 // Other	:
 //-----------------------------------------------------
@@ -41,8 +40,9 @@ integer k;
 
 always@(posedge clock or posedge reset) begin
 	if(reset) begin
-		for (i=0; i< 32;i=i+1) begin
+		for (i=0; i < 32; i=i+1 ) begin
       			RST_reg [i] <= 6'b0_00000; //se ponen todos los registros como no validos.
+			$display("INFO : RST -> Reset ...");
 		end
     	end else begin   
       		if(Wen_rst) begin
@@ -66,5 +66,11 @@ always @* begin
 end 
 
 assign CDB_Token = {RB_valid_rst,RB_tag_rst};
+
+// Read Rs and Rt
+assign Rstag_rst 	= RST_reg[Rsaddr_rst][4:0];
+assign Rttag_rst 	= RST_reg[Rtaddr_rst][4:0];
+assign Rsvalid_rst 	= RST_reg[Rsaddr_rst][  5];
+assign Rtvalid_rst 	= RST_reg[Rtaddr_rst][  5];
 
 endmodule
