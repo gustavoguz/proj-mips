@@ -1,0 +1,2 @@
+BLOCK_NAME: DISPATCH_UNIT
+SUB_LIST: BranchLogic Decoder RegFile ROB RST_ TagFifo
