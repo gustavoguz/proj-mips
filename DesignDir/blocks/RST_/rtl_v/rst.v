@@ -36,20 +36,26 @@ reg 	[31:0]	Comparator;
 integer i;
 integer j;
 integer k;
-
+integer l;
 
 always@(posedge clock or posedge reset) begin
 	if(reset) begin
 		for (i=0; i < 32; i=i+1 ) begin
       			RST_reg [i] <= 6'b0_00000; //se ponen todos los registros como no validos.
-			$display("INFO : RST -> Reset ...");
+			Wen1_rst[i] <= 0;
 		end
     	end else begin   
       		if(Wen_rst) begin
         		RST_reg [Waddr_rst] <= {1'b1, Wdata_rst};
       		end 
-     /*  falta borrar los tags 
-*/
+     /*  falta borrar los tags */
+		if(|Wen0_rst) begin
+			for (l=0; l < 32; l=l+1 ) begin
+				if (Wen0_rst[l]) begin
+        				RST_reg [l] <= {1'b0, 5'b0};
+				end	
+			end
+		end 
     	end
 end
 

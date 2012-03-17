@@ -10,20 +10,20 @@
 module regfiletmp (
 	input			clock,
 	input			reset,
-	input 	[41: 0]		Data_In,
+	input 	[72: 0]		Data_In,
 	input 	[ 4: 0]		Waddr,
 	input			New_entry,
 	input			Update_entry,
-	output	[41: 0]		Data_out1,
+	output	[72: 0]		Data_out1,
 	input	[ 4: 0]		Rd_Addr1,
-	output	[41: 0]		Data_out2,
+	output	[72: 0]		Data_out2,
 	input	[ 4: 0]		Rd_Addr2
 );
 
-// | rd_reg	| PC    | Inst_type | spec_data | spec_valid | valid |
-// | [41:38]	|[37:5] | [4:3]	    |      [2]  |   [1]	     |  [0]  |
+// | rd_reg	| PC     | Inst_type | spec_data | spec_valid | valid |
+// | [72:68]	|[67:36] | [35:34]   |   [33:2]  |   [1]      |  [0]  |
 
-reg 	[41: 0] RegFile [32: 0];
+reg 	[72: 0] RegFile [32: 0];
 integer i;
 
 always @ (posedge clock or posedge reset) 
@@ -42,7 +42,7 @@ begin
 		end else if (Update_entry)
 		begin
 			RegFile [Waddr][1] <= Data_In[1]; 
-			RegFile [Waddr][2] <= Data_In[2]; 
+			RegFile [Waddr][33:2] <= Data_In[33:2]; 
 		end
 	end
 end

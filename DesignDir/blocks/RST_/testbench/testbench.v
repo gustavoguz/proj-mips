@@ -21,7 +21,7 @@ module testbench;
   	reg  	[ 4:0] 	Waddr_rst;
 	reg 	[31:0] 	Wen0_rst;
 	reg 		Wen_rst;
-	wire 		Wen1_rst;
+	wire 	[31:0]	Wen1_rst;
 
 rst rst (
   	.clock(clock),
@@ -55,6 +55,17 @@ initial  begin
 	clock = 0;
 	reset = 1;
 #10	reset = 0;
+	Wen0_rst=Wen1_rst;
+	RB_tag_rst  =0;
+	RB_valid_rst=1;
+//write all registers
+for (i=0; i<32; i=i+1) begin
+#5  	Wen_rst=1;
+	Wdata_rst=i;
+	Waddr_rst=i;
+$display ("Write -> $d",i);
+end
+#5  	Wen_rst=0;
 
 // Read all registers 
 for (i=0; i<32; i=i+1) begin
@@ -70,6 +81,8 @@ for (i=0; i<32; i=i+1) begin
 #10  	Rsaddr_rst=i;
   	Rtaddr_rst=i;
 end
+	RB_tag_rst  =1;
+	RB_valid_rst=1;
 
 
 #30	$finish;
