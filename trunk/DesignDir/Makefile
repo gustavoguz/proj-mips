@@ -5,7 +5,7 @@ export DESIGN_DIR
 export DEBUG
 
 
-BLOCK_NAME:=RegFileTmp
+BLOCK_NAME:=RST_
 SUB_LIST:=""
 
 test: query_blocks query_blockdir query_rtl query_verilog query_testbench
