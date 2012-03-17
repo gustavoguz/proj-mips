@@ -19,7 +19,6 @@ module regfile(
 	input	[ 4: 0]		Rd_Addr2
 );
 
-
 reg 	[32: 0] RegFile [32: 0];
 integer i;
 
@@ -39,9 +38,6 @@ begin
 		end
 	end
 end
-
-
-
 
 assign Data_out1 = RegFile[Rd_Addr1];
 assign Data_out2 = RegFile[Rd_Addr2];
