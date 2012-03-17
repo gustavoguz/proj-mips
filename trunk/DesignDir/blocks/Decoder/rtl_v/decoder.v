@@ -22,7 +22,6 @@
 //		http://www.mrc.uidaho.edu/mrc/people/jff/digital/MIPSir.html
 //--------------------------------------------------------------------------------------------------------------------------
 
-
 module decoder (
 	input              	clock,
 	input             	reset,
