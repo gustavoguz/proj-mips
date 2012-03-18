@@ -50,39 +50,65 @@ integer i;
 always begin 
 #5	clock=!clock;
 end
-
+/*
+always @(posedge clock) begin
+//for (i=0; i<32; i=i+1) begin
+if (i<32) begin 
+  	Wen_rst=1;
+	Wdata_rst=i;
+	Waddr_rst=i;
+$display ("Write -> %d",i);
+i=i+1;
+end else begin
+	i=0;
+end
+if (i== 31)
+	Wen_rst=0;
+end
+*/
 initial  begin
 	clock = 0;
 	reset = 1;
 #10	reset = 0;
-	Wen0_rst=Wen1_rst;
+	i=0;
+	Wen0_rst=0;
 	RB_tag_rst  =0;
-	RB_valid_rst=1;
+	RB_valid_rst=0;
 //write all registers
+
 for (i=0; i<32; i=i+1) begin
-#5  	Wen_rst=1;
+#10 if (clock) begin 
+  	Wen_rst=1;
 	Wdata_rst=i;
 	Waddr_rst=i;
-$display ("Write -> $d",i);
+	$display ("Write -> %d",i);
 end
-#5  	Wen_rst=0;
+end
+
+#50  	Wen_rst=0;
 
 // Read all registers 
 for (i=0; i<32; i=i+1) begin
-#5  	Rsaddr_rst=i;
-$display ("$d",i);
+#10  	Rsaddr_rst=i;
+$display ("Read Rs: %d, %d, %d , %d ",Rsaddr_rst,i,Rstag_rst, Rsvalid_rst);
 end
 
 for (i=0; i<32; i=i+1) begin
 #10  	Rtaddr_rst=i;
+$display ("Read Rt: %d, %d, %d , %d ",Rtaddr_rst,i,Rttag_rst, Rtvalid_rst);
 end
 
 for (i=0; i<32; i=i+1) begin
 #10  	Rsaddr_rst=i;
   	Rtaddr_rst=i;
+$display ("Read Rs: %d, %d, %d , %d ",Rsaddr_rst,i,Rstag_rst, Rsvalid_rst);
+$display ("Read Rt: %d, %d, %d , %d ",Rtaddr_rst,i,Rttag_rst, Rtvalid_rst);
 end
-	RB_tag_rst  =1;
+// borrar un tag
+#20	RB_tag_rst  =2;
 	RB_valid_rst=1;
+  	Rsaddr_rst=2;
+$display ("Clear tag 2: %d, %d, %d , %d ",Rsaddr_rst,i,Rstag_rst, Rsvalid_rst);
 
 
 #30	$finish;
