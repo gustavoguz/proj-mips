@@ -39,8 +39,10 @@ begin
 		if (New_entry)
 		begin
 			RegFile [Waddr] <= Data_In; 
+			$display ("INFO : RegFileTmp : New Entry addr %d = %d",Waddr,Data_In);
 		end else if (Update_entry)
 		begin
+			$display ("INFO : RegFileTmp : Update Entry addr=%d Spec_data=%d valid=%d",Waddr,Data_In[33:2],Data_In[1]);
 			RegFile [Waddr][1] <= Data_In[1]; 
 			RegFile [Waddr][33:2] <= Data_In[33:2]; 
 		end

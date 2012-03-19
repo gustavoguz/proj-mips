@@ -1,2 +1,2 @@
 BLOCK_NAME: ROB
-SUB_LIST: 
+SUB_LIST: RegFileTmp Order_Queue FiFo RST_ Coder32_5 Deco5_32
