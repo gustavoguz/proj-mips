@@ -22,14 +22,14 @@ assign writeEnableDecoded = (writeEnable << dest);
 // flip-flop for data-out
 always@(posedge clock)
 begin
-	if(!reset) dataOut <= 0;
+	if(reset) dataOut <= 0;
 	else dataOut <= rf[source];
 end
 
 // memory array
 always@(posedge clock)
 begin
-	if(!reset)
+	if(reset)
 	begin
 		for(i = 0; i<DEPTH; i=i+1)
 			rf[i] <= 0;
@@ -41,7 +41,7 @@ begin
 			if(writeEnableDecoded[j]) 
 				begin
 				rf[j] <= dataIn;
-				$display ("rf[%d]== dataIn(%d),",j,dataIn);
+				$display ("INFO : OrderQueue : rf[%d]== dataIn(%d),",j,dataIn);
 				end
 			end
 	end

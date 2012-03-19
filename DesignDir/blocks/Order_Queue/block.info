@@ -1,2 +1,2 @@
 BLOCK_NAME: Order_Queue
-SUB_LIST: Order_Queue_Mem
+SUB_LIST: FiFo

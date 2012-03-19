@@ -1,2 +1,8 @@
-
-/home/gustavo/MDE/uP_Design/uP02032012/DesignDir/blocks/ROB/testbench/testbench.v
+/home/gustavo/MDE/uP_Design/MIPS/trunk/DesignDir/blocks/ROB/rtl_v/rob.v
+/home/gustavo/MDE/uP_Design/MIPS/trunk/DesignDir/blocks/ROB/testbench/testbench.v
+/home/gustavo/MDE/uP_Design/MIPS/trunk/DesignDir/blocks/RegFileTmp/rtl_v/regfiletmp.v
+/home/gustavo/MDE/uP_Design/MIPS/trunk/DesignDir/blocks/Order_Queue/rtl_v/order_queue.v
+/home/gustavo/MDE/uP_Design/MIPS/trunk/DesignDir/blocks/FiFo/rtl_v/fifo.v
+/home/gustavo/MDE/uP_Design/MIPS/trunk/DesignDir/blocks/RST_/rtl_v/rst.v
+/home/gustavo/MDE/uP_Design/MIPS/trunk/DesignDir/blocks/Coder32_5/rtl_v/coder32_5.v
+/home/gustavo/MDE/uP_Design/MIPS/trunk/DesignDir/blocks/Deco5_32/rtl_v/deco5_32.v

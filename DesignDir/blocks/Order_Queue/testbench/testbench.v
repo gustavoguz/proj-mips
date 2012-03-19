@@ -13,14 +13,15 @@ reg new_data;
 reg out_data;
 wire [WIDTH-1 : 0] outData;
 wire full;
+wire empty;
 
 integer i;
-order_queue order_queue (clock, reset, inData, new_data, out_data, outData, full);
+order_queue order_queue (clock, reset, inData, new_data, out_data, outData, full, empty);
 
 initial 
 begin
 clock=0;
-reset=0;
+reset=1;
 end
 
 always 
@@ -28,8 +29,9 @@ always
 
 initial
 begin
+
 	#30
-	reset=1;
+	reset=0;
 	$display ("START: writing 32 elements");
 	for(i = 0; i<DEPTH+10; i=i+1)
 	begin
