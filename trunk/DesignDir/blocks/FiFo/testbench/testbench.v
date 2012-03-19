@@ -45,30 +45,30 @@ initial begin
 
 
 #1
-        for (i=0;i<10;i=i+1) begin
+        for (i=0;i<40;i=i+1) begin
 #10             wdata=i;
                 winc=1;
                 rinc=0;
         end
-        for (i=0;i<10;i=i+1) begin
+        for (i=0;i<40;i=i+1) begin
 #10             wdata=1;
                 winc=0;
                 rinc=1;
         end
 
 #20
-        for (i=0;i<10;i=i+1) begin
+        for (i=0;i<40;i=i+1) begin
 #10             wdata=i;
                 winc=1;
                 rinc=0;
         end
-        for (i=0;i<10;i=i+1) begin
+        for (i=0;i<40;i=i+1) begin
 #10             wdata=1;
                 winc=0;
                 rinc=1;
         end
 #20        
-        for (i=0;i<10;i=i+1) begin
+        for (i=0;i<40;i=i+1) begin
 #10             wdata=i;
                 winc=1;
                 rinc=1;
