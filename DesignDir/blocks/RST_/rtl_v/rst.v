@@ -49,7 +49,7 @@ always@(posedge clock or posedge reset) begin
 	if(reset) begin
 		for (i=0; i < 32; i=i+1 ) begin
       			RST_reg [i] <= 6'b0_00000; //se ponen todos los registros como no validos.
-			//Wen1_rst[i] <= 0;
+			Comparator[i] <= 0;
 		end
     	end else begin   
       		if(Wen_rst) begin
