@@ -83,6 +83,11 @@ initial begin
 Dispatch_pc=0;
 Rs_reg_ren=0;
 Rt_reg_ren=0;
+Cdb_valid=0;
+Cdb_rd_tag=0;
+Cdb_data=0;
+Cdb_branch=0;
+Cdb_branch_taken=0;
 // Nueva instruccion:
 for (i=0; i<40; i=i+1) begin
 #10
@@ -108,6 +113,9 @@ $display ("Rt_Data_valid %d",Rt_Data_valid);
 $display ("------------------------------------------");
 end
 
+$display ("+++++++++++++++++++++++++++++++++------------------------------------------+++++++++++++++++++++++++++++++++++++++");
+$display ("INFO : ROB TB : START UPDATING CDB BUS ");
+$display ("+++++++++++++++++++++++++++++++++------------------------------------------+++++++++++++++++++++++++++++++++++++++");
 // CDB update:
 for (i=0; i<40; i=i+1) begin
 #10	Cdb_rd_tag=i;
@@ -115,7 +123,6 @@ for (i=0; i<40; i=i+1) begin
 	Cdb_data=i*10;
 	Cdb_branch=0;
 	Cdb_branch_taken=0;
-	Dispatch_Rd_tag= Cdb_rd_tag;//TODO : revisar esta señal, como se debe direccionar este registro?
 end 
 // Lectura del estdo de los registros:
 Rs_reg_ren = 1;
