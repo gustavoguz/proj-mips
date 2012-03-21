@@ -49,16 +49,16 @@ always@(posedge clock or posedge reset) begin
 	if(reset) begin
 		for (i=0; i < 32; i=i+1 ) begin
       			RST_reg [i] <= 6'b0_00000; //se ponen todos los registros como no validos.
-			Comparator[i] <= 0;
+//			Comparator[i] <= 0;
 		end
     	end else begin   
       		if(Wen_rst) begin
         		RST_reg [Waddr_rst] <= {1'b1, Wdata_rst};
-			$display("INFO : RST : write RST_reg[%d] = %b" ,Waddr_rst, {1'b1,Wdata_rst});
+			`ifdef DEBUG_RST $display("INFO : RST : write RST_reg[%d] = %b" ,Waddr_rst, {1'b1,Wdata_rst}); `endif
       		end 
 		if(Clear_en) begin
         		RST_reg [Addr] <= {1'b0, 5'b0};
-			$display("INFO : RST : Clear RST_reg[%d] = %b" , Addr, {1'b0,5'b0});
+			`ifdef DEBUG_RST $display("INFO : RST : Clear RST_reg[%d] = %b" , Addr, {1'b0,5'b0}); `endif
 		end 
     	end
 end
