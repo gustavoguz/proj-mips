@@ -1,3 +1,4 @@
++define+DEBUG_OrderQueue
 /home/gustavo/MDE/uP_Design/MIPS/trunk/DesignDir/blocks/Order_Queue/rtl_v/order_queue.v
 /home/gustavo/MDE/uP_Design/MIPS/trunk/DesignDir/blocks/Order_Queue/testbench/testbench.v
 /home/gustavo/MDE/uP_Design/MIPS/trunk/DesignDir/blocks/FiFo/rtl_v/fifo.v

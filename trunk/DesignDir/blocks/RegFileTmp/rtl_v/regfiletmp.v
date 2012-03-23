@@ -39,10 +39,10 @@ begin
 		if (New_entry)
 		begin
 			RegFile [Waddr] <= Data_In; 
-			$display ("INFO : RegFileTmp : New Entry addr %d = %d",Waddr,Data_In);
+			`ifdef DEBUG_RegFileTmp $display ("INFO : RegFileTmp : New Entry addr %d = %d",Waddr,Data_In); `endif
 		end else if (Update_entry)
 		begin
-			$display ("INFO : RegFileTmp : Update Entry addr=%d Spec_data=%d spec_valid=%d",Waddr,Data_In[33:2],Data_In[1]);
+			`ifdef DEBUG_RegFileTmp $display ("INFO : RegFileTmp : Update Entry addr=%d Spec_data=%d spec_valid=%d",Waddr,Data_In[33:2],Data_In[1]); `endif
 			RegFile [Waddr][1] <= Data_In[1]; 
 			RegFile [Waddr][33:2] <= Data_In[33:2]; 
 		end

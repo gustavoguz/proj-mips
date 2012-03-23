@@ -37,21 +37,26 @@ parameter MEMDEPTH = ASIZE+1;
 
 reg [DSIZE-1:0] ex_mem [0:MEMDEPTH-1];
 
-always @(posedge wclk or negedge wrst_n)
-        if (!wrst_n) begin
-		wptr <= 0;
+//always @(posedge wclk or negedge wrst_n)
+always @* begin  
+       if (!wrst_n) begin
+		wptr = 0;
 	end else if (winc && !wfull) begin
-                ex_mem[wptr[DSIZE-1:0]] <= wdata;
-                wptr <= wptr+1;
-	//	$display("INFO : FIFO : write -> %b, %p",wptr,ex_mem);
+                ex_mem[wptr[DSIZE-1:0]] = wdata;
+                wptr = wptr+1;
+		`ifdef DEBUG_OrderQueue $display("INFO : FIFO : write -> %b, %p",wptr,ex_mem); `endif
 	end
+	if (wfull)
+		`ifdef DEBUG_OrderQueue $display("INFO : FIFO : FULL /*/*/*/**/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*//*/*/"); `endif
+end
 
-always @(posedge rclk or negedge rrst_n)
+//always @(posedge rclk or negedge rrst_n)
+always @*  
         if (!rrst_n) begin 
-		rptr <= 0;
+		rptr = 0;
         end else if (rinc && !rempty) begin
-		rptr <= rptr+1;
-	//	$display("INFO : FIFO : read -> %b, %p",rptr,ex_mem);
+		rptr = rptr+1;
+		`ifdef DEBUG_OrderQueue $display("INFO : FIFO : read -> %b, %p",rptr,ex_mem); `endif
 	end
 		
 assign rdata = ex_mem[rptr[DSIZE-1:0]];
