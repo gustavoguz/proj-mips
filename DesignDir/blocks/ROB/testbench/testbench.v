@@ -6,6 +6,8 @@ module testbench;
 
   	reg        	clock;
   	reg        	reset;
+	reg 		new_rd_tag;
+	reg		new_rd_tag_valid;
 	reg 	[  4:  0]	Rs_reg;
 	reg 			Rs_reg_ren;
 	wire 	[  5:  0]	Rs_token;
@@ -40,6 +42,8 @@ module testbench;
 rob rob (
   	.clock(clock),
   	.reset(reset),
+	.new_rd_tag(new_rd_tag),
+	.new_rd_tag_valid(new_rd_tag_valid),
 	.Rs_reg(Rs_reg),
 	.Rs_reg_ren(Rs_reg_ren),
 	.Rs_token(Rs_token),
@@ -75,6 +79,9 @@ always begin
 #5 	clock=!clock;
 end
 
+always
+#5 new_rd_tag=!new_rd_tag;
+
 initial begin
 	clock=0;
 	reset=0;
@@ -89,38 +96,45 @@ Cdb_data=0;
 Cdb_branch=0;
 Cdb_branch_taken=0;
 // Nueva instruccion:
+new_rd_tag_valid=0;
+new_rd_tag=0;
 for (i=0; i<40; i=i+1) begin
 #10
-	$display("Nueva instruccion,Dispatch_Rd_tag=%d,Dispatch_Rd_reg=%d,Dispatch_pc=%d,Dispatch_inst_type=2'b11",i,i,Dispatch_pc+4);
+	`ifdef DEBUG_ROB_TB $display("Nueva instruccion,Dispatch_Rd_tag=%d,Dispatch_Rd_reg=%d,Dispatch_pc=%d,Dispatch_inst_type=2'b11",i,i,Dispatch_pc+4); `endif
 	Dispatch_Rd_tag=i;
 	Dispatch_Rd_reg=i;
 	Dispatch_pc=Dispatch_pc+4;
 	Dispatch_inst_type=2'b11;
+	new_rd_tag_valid=1;
 end
+new_rd_tag_valid=0;
+
 // Lectura del estdo de los registros:
 for (i=0; i<40; i=i+1) begin
 #10	Rs_reg=i;
 	Rs_reg_ren=1;
 	Rt_reg=i;
 	Rt_reg_ren=1;
-$display ("------------------------------------------");
-$display ("Rs_token 	 %d",Rs_token);
-$display ("Rs_Data_spec  %d",Rs_Data_spec);
-$display ("Rs_Data_valid %d",Rs_Data_valid);
-$display ("Rt_token 	 %d",Rt_token);
-$display ("Rt_Data_spec  %d",Rt_Data_spec);
-$display ("Rt_Data_valid %d",Rt_Data_valid);
-$display ("------------------------------------------");
+`ifdef DEBUG_ROB_TB $display ("------------------------------------------"); `endif
+`ifdef DEBUG_ROB_TB $display ("Rs_token 	 %d",Rs_token); `endif
+`ifdef DEBUG_ROB_TB $display ("Rs_Data_spec  %d",Rs_Data_spec); `endif
+`ifdef DEBUG_ROB_TB $display ("Rs_Data_valid %d",Rs_Data_valid); `endif
+`ifdef DEBUG_ROB_TB $display ("Rt_token 	 %d",Rt_token); `endif
+`ifdef DEBUG_ROB_TB $display ("Rt_Data_spec  %d",Rt_Data_spec); `endif
+`ifdef DEBUG_ROB_TB $display ("Rt_Data_valid %d",Rt_Data_valid); `endif
+`ifdef DEBUG_ROB_TB $display ("------------------------------------------"); `endif
 end
 
-$display ("+++++++++++++++++++++++++++++++++------------------------------------------+++++++++++++++++++++++++++++++++++++++");
-$display ("INFO : ROB TB : START UPDATING CDB BUS ");
-$display ("+++++++++++++++++++++++++++++++++------------------------------------------+++++++++++++++++++++++++++++++++++++++");
+`ifdef DEBUG_ROB_TB $display ("+++++++++++++++++++++++++++++++++------------------------------------------+++++++++++++++++++++++++++++++++++++++"); `endif
+`ifdef DEBUG_ROB_TB $display ("INFO : ROB TB : START UPDATING CDB BUS "); `endif
+`ifdef DEBUG_ROB_TB $display ("+++++++++++++++++++++++++++++++++------------------------------------------+++++++++++++++++++++++++++++++++++++++"); `endif
 // CDB update:
+Rs_reg_ren = 0;
+Rt_reg_ren = 0;
 for (i=0; i<40; i=i+1) begin
 #10	Cdb_rd_tag=i;
 	Cdb_valid=1;
-	Cdb_data=i*10;
+	Cdb_data=i;
 	Cdb_branch=0;
 	Cdb_branch_taken=0;
 end 
@@ -132,14 +146,14 @@ for (i=0; i<40; i=i+1) begin
 	Rs_reg_ren=1;
 	Rt_reg=i;
 	Rt_reg_ren=1;
-$display ("------------------------------------------");
-$display ("Rs_token 	 %d",Rs_token);
-$display ("Rs_Data_spec  %d",Rs_Data_spec);
-$display ("Rs_Data_valid %d",Rs_Data_valid);
-$display ("Rt_token 	 %d",Rt_token);
-$display ("Rt_Data_spec  %d",Rt_Data_spec);
-$display ("Rt_Data_valid %d",Rt_Data_valid);
-$display ("------------------------------------------");
+`ifdef DEBUG_ROB_TB $display ("------------------------------------------"); `endif
+`ifdef DEBUG_ROB_TB $display ("Rs_token 	 %d",Rs_token); `endif
+`ifdef DEBUG_ROB_TB $display ("Rs_Data_spec  %d",Rs_Data_spec); `endif
+`ifdef DEBUG_ROB_TB $display ("Rs_Data_valid %d",Rs_Data_valid); `endif
+`ifdef DEBUG_ROB_TB $display ("Rt_token 	 %d",Rt_token); `endif
+`ifdef DEBUG_ROB_TB $display ("Rt_Data_spec  %d",Rt_Data_spec); `endif
+`ifdef DEBUG_ROB_TB $display ("Rt_Data_valid %d",Rt_Data_valid); `endif
+`ifdef DEBUG_ROB_TB $display ("------------------------------------------"); `endif
 end
 
 #40 $finish;
