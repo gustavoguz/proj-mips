@@ -117,9 +117,13 @@ for (i=0; i<40; i=i+1) begin
 	Rt_reg_ren=1;
 `ifdef DEBUG_ROB_TB $display ("------------------------------------------"); `endif
 `ifdef DEBUG_ROB_TB $display ("Rs_token 	 %d",Rs_token); `endif
+`ifdef DEBUG_ROB_TB $display ("Rs_token_tag 	 %d",Rs_token[5:1]); `endif
+`ifdef DEBUG_ROB_TB $display ("Rs_token_valid 	 %d",Rs_token[0]); `endif
 `ifdef DEBUG_ROB_TB $display ("Rs_Data_spec  %d",Rs_Data_spec); `endif
 `ifdef DEBUG_ROB_TB $display ("Rs_Data_valid %d",Rs_Data_valid); `endif
 `ifdef DEBUG_ROB_TB $display ("Rt_token 	 %d",Rt_token); `endif
+`ifdef DEBUG_ROB_TB $display ("Rs_token_tag 	 %d",Rt_token[5:1]); `endif
+`ifdef DEBUG_ROB_TB $display ("Rs_token_valid 	 %d",Rt_token[0]); `endif
 `ifdef DEBUG_ROB_TB $display ("Rt_Data_spec  %d",Rt_Data_spec); `endif
 `ifdef DEBUG_ROB_TB $display ("Rt_Data_valid %d",Rt_Data_valid); `endif
 `ifdef DEBUG_ROB_TB $display ("------------------------------------------"); `endif
@@ -133,10 +137,13 @@ Rs_reg_ren = 0;
 Rt_reg_ren = 0;
 for (i=0; i<40; i=i+1) begin
 #10	Cdb_rd_tag=i;
-	Cdb_valid=1;
 	Cdb_data=i;
 	Cdb_branch=0;
 	Cdb_branch_taken=0;
+	if (i<32)
+	Cdb_valid=1;
+	else 
+	Cdb_valid=0;
 end 
 // Lectura del estdo de los registros:
 Rs_reg_ren = 1;
@@ -148,9 +155,13 @@ for (i=0; i<40; i=i+1) begin
 	Rt_reg_ren=1;
 `ifdef DEBUG_ROB_TB $display ("------------------------------------------"); `endif
 `ifdef DEBUG_ROB_TB $display ("Rs_token 	 %d",Rs_token); `endif
+`ifdef DEBUG_ROB_TB $display ("Rs_token_tag 	 %d",Rs_token[5:1]); `endif
+`ifdef DEBUG_ROB_TB $display ("Rs_token_valid 	 %d",Rs_token[0]); `endif
 `ifdef DEBUG_ROB_TB $display ("Rs_Data_spec  %d",Rs_Data_spec); `endif
 `ifdef DEBUG_ROB_TB $display ("Rs_Data_valid %d",Rs_Data_valid); `endif
 `ifdef DEBUG_ROB_TB $display ("Rt_token 	 %d",Rt_token); `endif
+`ifdef DEBUG_ROB_TB $display ("Rs_token_tag 	 %d",Rt_token[5:1]); `endif
+`ifdef DEBUG_ROB_TB $display ("Rs_token_valid 	 %d",Rt_token[0]); `endif
 `ifdef DEBUG_ROB_TB $display ("Rt_Data_spec  %d",Rt_Data_spec); `endif
 `ifdef DEBUG_ROB_TB $display ("Rt_Data_valid %d",Rt_Data_valid); `endif
 `ifdef DEBUG_ROB_TB $display ("------------------------------------------"); `endif
