@@ -1,6 +1,7 @@
 +define+DEBUG_ROB
 +define+DEBUG_OrderQueue
 +define+DEBUG_ROB_TB
++define+DEBUG_RegFileTmp
 /home/gustavo/MDE/uP_Design/MIPS/trunk/DesignDir/blocks/ROB/rtl_v/rob.v
 /home/gustavo/MDE/uP_Design/MIPS/trunk/DesignDir/blocks/ROB/testbench/testbench.v
 /home/gustavo/MDE/uP_Design/MIPS/trunk/DesignDir/blocks/RegFileTmp/rtl_v/regfiletmp.v

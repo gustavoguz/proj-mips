@@ -13,7 +13,7 @@
 // Other	:
 //-------------------------------------------------------------------------
 
-module order_queue (clock, reset, inData, new_data, out_data, outData, full, empty);
+module order_queue (clock, reset, inData, new_data, out_data, outData, full, empty, increment);
 
 parameter WIDTH = 5;
 
@@ -22,6 +22,7 @@ input reset;
 input [WIDTH-1 : 0] inData;
 input new_data;
 input out_data;
+input increment;
 
 output [WIDTH-1 : 0] outData;
 output full;
@@ -37,7 +38,8 @@ fifo fifo (
 	.wrst_n	(!reset), 
 	.rinc	(out_data), 
 	.rclk	(clock), 
-	.rrst_n	(!reset)
+	.rrst_n	(!reset),
+	.increment (increment)
 	);
 
 endmodule
