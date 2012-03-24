@@ -17,31 +17,31 @@
 //-----------------------------------------------------
 
 module rob (
-  	input        	clock,
-  	input        	reset,
-	input 		new_rd_tag,
-	input 		new_rd_tag_valid,
-	input 	[  4:  0]	Rs_reg,
-	input 			Rs_reg_ren,
+  	input        			clock,
+  	input        			reset,
+	input 				new_rd_tag,
+	input 				new_rd_tag_valid,
+	input 		[  4:  0]	Rs_reg,
+	input 				Rs_reg_ren,
 	output reg 	[  5:  0]	Rs_token,
 	output reg 	[ 31:  0]	Rs_Data_spec,
 	output reg 			Rs_Data_valid,
-	input  	[  4:  0]	Rt_reg,
-	input  			Rt_reg_ren,
+	input  		[  4:  0]	Rt_reg,
+	input  				Rt_reg_ren,
 	output reg	[  5:  0]	Rt_token,
 	output reg	[ 31:  0]	Rt_Data_spec,
 	output reg			Rt_Data_valid,
 
-	input	[  4:  0]	Dispatch_Rd_tag,
-	input	[  4:  0]	Dispatch_Rd_reg,
-	input 	[ 31:  0]	Dispatch_pc,
-	input	[  1:  0]	Dispatch_inst_type,
+	input		[  4:  0]	Dispatch_Rd_tag,
+	input		[  4:  0]	Dispatch_Rd_reg,
+	input 		[ 31:  0]	Dispatch_pc,
+	input		[  1:  0]	Dispatch_inst_type,
 
-	input 	[  4:  0]	Cdb_rd_tag,//: TAG de 5 bits
-	input			Cdb_valid,//: senial que indica si el TAG es válido.
-	input	[ 31:  0]	Cdb_data,//: 32 bits del valor que debe de tomar el registro asociado con el TAG.
-	input 			Cdb_branch,//: Indica si la instrucción que termino ejecución se trata de un branch.
-	input			Cdb_branch_taken,//: „1‟ indica que el branch debe de ser tomado, „0‟ no debe de ser tomado.
+	input 		[  4:  0]	Cdb_rd_tag,//: TAG de 5 bits
+	input				Cdb_valid,//: senial que indica si el TAG es válido.
+	input		[ 31:  0]	Cdb_data,//: 32 bits del valor que debe de tomar el registro asociado con el TAG.
+	input 				Cdb_branch,//: Indica si la instrucción que termino ejecución se trata de un branch.
+	input				Cdb_branch_taken,//: „1‟ indica que el branch debe de ser tomado, „0‟ no debe de ser tomado.
 
 	output reg	[  4:  0]	Retire_rd_tag,// (5) – out
 	output reg	[  4:  0]	Retire_rd_reg,// (5) – out // registro que tiene ser actualizado en el banco de registros
@@ -78,26 +78,24 @@ reg  [ 4:0] 	AddrRFT;
 reg  [ 4:0] 	Retire_rd_tag_reg;
 reg 		Retire_valid_reg;
 
-reg RequestQueryRs;
-reg RequestQueryRt;
-reg RequestUpdate;
-reg RequestAddNew;
-reg RequestRetire;
+reg 		RequestQueryRs;
+reg 		RequestQueryRt;
+reg 		RequestUpdate;
+reg 		RequestAddNew;
+reg 		RequestRetire;
 
-reg RequestAddNew_reg;
-reg RequestQueryRs_reg;
-reg RequestQueryRt_reg;
-reg RequestUpdate_reg;
-reg OrderQueueNew_write_reg; 
+reg 		RequestAddNew_reg;
+reg 		RequestQueryRs_reg;
+reg 		RequestQueryRt_reg;
+reg 		RequestUpdate_reg;
+reg 		OrderQueueNew_write_reg; 
 
-//always @ ( Rs_reg or Rt_reg) begin 
 always @ * begin 
 	if ( Rs_reg_ren ) begin 
 		RequestQueryRs = 1;
 		`ifdef DEBUG_ROB $display ("INFO : ROB : Request Query Rs"); `endif
 	end else
 		RequestQueryRs = RequestQueryRs_reg;
-	
 
 	if ( Rt_reg_ren)  begin 
 		RequestQueryRt = 1;
@@ -115,14 +113,13 @@ always @* begin
 	end
 end
 
-always @* begin
-	if (Cdb_valid) begin // check si tiene que validarse este bit.
-		RequestUpdate=1;
-		OrderQueueNew_read=0;
+always @(Cdb_valid or Cdb_data or Cdb_rd_tag or Cdb_branch or Cdb_branch_taken or RequestUpdate_reg) begin
+	if (Cdb_valid) begin 
+		RequestUpdate = 1;
+		OrderQueueNew_read = 0;
 		`ifdef DEBUG_ROB $display ("INFO : ROB : Request Update R"); `endif
 	end else begin
-		RequestUpdate=RequestUpdate_reg;
-		OrderQueueNew_read=0;
+		RequestUpdate = RequestUpdate_reg;
 	end
 end
 
@@ -171,12 +168,12 @@ always @ (posedge clock or posedge reset) begin
 		`ifdef DEBUG_ROB $display("INFO : ROB : Update_entry %d %d", Cdb_rd_tag,Cdb_data); `endif
  		Wen_rst 	<= 0; // RST : write enable
 		NewEntry	<= 0; // Register file temp : write enable
-		OrderQueueNew_write  <= 0; // Order queue : write enable
-		Update_entry 	<=1;
-		AddrRFT		<= Cdb_rd_tag;	
-		NewEntryData <= {Dispatch_Rd_reg,Dispatch_pc,Dispatch_inst_type,Cdb_data,Cdb_valid,1'b1};
+		Update_entry 	<= 1;
 		RequestUpdate_reg <= 0;
-		RequestAddNew_reg	<= 0;
+		RequestAddNew_reg <= 0;
+		OrderQueueNew_write  <= 0; // Order queue : write enable
+		AddrRFT		<= Cdb_rd_tag;	
+		NewEntryData 	<= {Dispatch_Rd_reg,Dispatch_pc,Dispatch_inst_type,Cdb_data,Cdb_valid,1'b1};
 		end else if (RequestAddNew) begin 
 		`ifdef DEBUG_ROB $display("INFO : ROB : Add new entry"); `endif
  		Wen_rst 	<= 1; // RST : write enable
@@ -188,7 +185,6 @@ always @ (posedge clock or posedge reset) begin
 		OrderQueueDataIn<= Dispatch_Rd_tag; // nuevo valor para la rder queue;
 		RequestAddNew_reg	<= 0;
 		RequestUpdate_reg <= 0;
-		$display ("+++++++++++++++++++++++++++++++++++++++++++++>dispatch tag = %d <",Dispatch_Rd_tag);
 		end
 		if (RequestRetire) begin 
 		OrderQueueNew_read<=0;
