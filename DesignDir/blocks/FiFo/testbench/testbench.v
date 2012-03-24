@@ -10,6 +10,7 @@ module testbench ();
         reg [DSIZE-1:0] wdata;
         reg winc, wclk, wrst_n;
         reg rinc, rclk, rrst_n;
+	reg increment;
 
 integer i;
 
@@ -23,7 +24,8 @@ fifo fifo (
         .wrst_n(wrst_n),
         .rinc(rinc), 
         .rclk(rclk), 
-        .rrst_n(rrst_n)
+        .rrst_n(rrst_n),
+        .increment(increment)
         );
 always begin
 #5      wclk = !wclk;
@@ -31,14 +33,17 @@ end
 always begin
 #5       rclk = !rclk;
 end
-
-
+always begin
+//#10	increment=!increment;
+#10	increment=1;
+end
 initial begin
 
         wclk=1;
         rclk=1;
         rrst_n=0;
         wrst_n=0;
+	increment =0;
 #10         
         rrst_n=1;
         wrst_n=1;

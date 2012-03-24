@@ -16,8 +16,9 @@ module fifo (
 	wrst_n, 
 	rinc, 
 	rclk, 
-	rrst_n)
-	;
+	rrst_n,
+	increment
+	);
 
 parameter DSIZE = 5;
 parameter ASIZE_F = 6; // ASIZE = Max_number -1
@@ -29,6 +30,7 @@ output rempty;
 input [DSIZE-1:0] wdata;
 input winc, wclk, wrst_n;
 input rinc, rclk, rrst_n;
+input increment;
 
 reg [ASIZE_F-1:0] wptr;
 reg [ASIZE_F-1:0] rptr;
@@ -37,8 +39,8 @@ parameter MEMDEPTH = ASIZE+1;
 
 reg [DSIZE-1:0] ex_mem [0:MEMDEPTH-1];
 
-//always @(posedge wclk or negedge wrst_n)
-always @* begin  
+always @(posedge wclk or negedge wrst_n) begin
+//always @* begin  
        if (!wrst_n) begin
 		wptr = 0;
 	end else if (winc && !wfull) begin
@@ -46,18 +48,26 @@ always @* begin
                 wptr = wptr+1;
 		`ifdef DEBUG_OrderQueue $display("INFO : FIFO : write -> %b, %p",wptr,ex_mem); `endif
 	end
-	if (wfull)
-		`ifdef DEBUG_OrderQueue $display("INFO : FIFO : FULL /*/*/*/**/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*//*/*/"); `endif
+	if (wfull) begin
+		`ifdef DEBUG_OrderQueue $display("WARN : FIFO : FULL "); `endif
+	end
 end
 
-//always @(posedge rclk or negedge rrst_n)
-always @*  
+always @(posedge rclk or negedge rrst_n) begin
+//always @* begin
         if (!rrst_n) begin 
 		rptr = 0;
-        end else if (rinc && !rempty) begin
+        end else if (rinc && !rempty && !increment) begin
 		rptr = rptr+1;
-		`ifdef DEBUG_OrderQueue $display("INFO : FIFO : read -> %b, %p",rptr,ex_mem); `endif
+		`ifdef DEBUG_OrderQueue $display("INFO : FIFO : read -> %d, %p",rptr,ex_mem); `endif
+	end else if (rinc && !rempty && increment) begin
+		rptr = rptr;
+		`ifdef DEBUG_OrderQueue $display("INFO : FIFO : read -> %d, %p",rptr,ex_mem); `endif
 	end
+	if (rempty) begin 
+		`ifdef DEBUG_OrderQueue $display("WARN : FIFO : EMPTY "); `endif
+	end
+end
 		
 assign rdata = ex_mem[rptr[DSIZE-1:0]];
 

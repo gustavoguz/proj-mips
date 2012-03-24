@@ -64,6 +64,7 @@ wire 		Token_valid_rt;
 
 //Dispatch escribe nueva entrada en el ROB
 reg [72:0] 	NewEntryData;
+reg [72:0] 	Reg_File_Tmp_data_Rs_temp;
 reg 		NewEntry;
 reg 		Update_entry;
 reg 		OrderQueueNew_read;
@@ -74,9 +75,15 @@ wire 		OrderQueueEmpty;
 reg 		Wen_rst;
 wire [31:0]	Wen1_rst;
 wire [ 4:0] 	OrderQueue_data;
+reg  [ 4:0] 	OrderQueue_data_temp;
 reg  [ 4:0] 	AddrRFT;
 reg  [ 4:0] 	Retire_rd_tag_reg;
 reg 		Retire_valid_reg;
+reg 		increment;
+reg  [ 4:0]	Rs_reg_reg;
+reg  [ 4:0]	Rt_reg_reg;
+reg  [ 4:0]	Rs_reg_logic;
+reg  [ 4:0]	Rt_reg_logic;
 
 reg 		RequestQueryRs;
 reg 		RequestQueryRt;
@@ -88,26 +95,27 @@ reg 		RequestAddNew_reg;
 reg 		RequestQueryRs_reg;
 reg 		RequestQueryRt_reg;
 reg 		RequestUpdate_reg;
+reg 		RequestRetire_reg;
 reg 		OrderQueueNew_write_reg; 
 
 always @ * begin 
 	if ( Rs_reg_ren ) begin 
-		RequestQueryRs = 1;
 		`ifdef DEBUG_ROB $display ("INFO : ROB : Request Query Rs"); `endif
+		RequestQueryRs = 1;
 	end else
 		RequestQueryRs = RequestQueryRs_reg;
 
 	if ( Rt_reg_ren)  begin 
-		RequestQueryRt = 1;
 		`ifdef DEBUG_ROB $display ("INFO : ROB : Request Query Rt"); `endif
+		RequestQueryRt = 1;
 	end else 
 		RequestQueryRt = RequestQueryRt_reg;
 end
 
 always @* begin 
-	if (!OrderQueueFull && new_rd_tag && new_rd_tag_valid) begin
-		RequestAddNew = 1;
+	if (!OrderQueueFull && new_rd_tag && new_rd_tag_valid) begin // Esnecesario agregar new_rd_tag_valid?
 		`ifdef DEBUG_ROB $display ("INFO : ROB : Request Add New R"); `endif
+		RequestAddNew = 1;
 	end else begin
 		RequestAddNew = RequestAddNew_reg;
 	end
@@ -115,109 +123,101 @@ end
 
 always @(Cdb_valid or Cdb_data or Cdb_rd_tag or Cdb_branch or Cdb_branch_taken or RequestUpdate_reg) begin
 	if (Cdb_valid) begin 
-		RequestUpdate = 1;
-		OrderQueueNew_read = 0;
 		`ifdef DEBUG_ROB $display ("INFO : ROB : Request Update R"); `endif
+		RequestUpdate = 1;
+		// TODO : Mecanismo para invalidar todo el register file temp si Cdb_branch_taken = 1
 	end else begin
 		RequestUpdate = RequestUpdate_reg;
 	end
 end
 
-always @(Reg_File_Tmp_data_Rs or Reg_File_Tmp_data_Rt) begin
-	if(Reg_File_Tmp_data_Rs[0] || Reg_File_Tmp_data_Rt[0]) begin 
-		RequestRetire=1;
-		`ifdef DEBUG_ROB $display ("INFO : ROB : Request Retire"); `endif
-	end else begin
-		RequestRetire=0;
-		//OrderQueueNew_read=0;
-	end
+always @* begin
+	Rs_reg_logic = Rs_reg_reg;
+	Rt_reg_logic = Rt_reg_reg;
 end
 
-// Control del ROB
+// -------------------------     Control del ROB     ---------------------------------
+
 always @ (posedge clock or posedge reset) begin
 	if (reset) begin
-/* 		Wen_rst 	<= 0;
-		NewEntry 	<= 0;	
-		Update_entry 	<= 0;	
-		NewEntryData	<= 0;
-		OrderQueueNew_read	<= 0;
-		OrderQueueNew_write	<= 0;
-		RequestQueryRs <= 0;
-		RequestQueryRt <= 0;
-		RequestAddNew  <= 0;
-		Retire_rd_tag_reg <= 0; // de dondse obtienen estos valores ? para retirar
-		Retire_valid_reg  <= 0; // 
-*/	end else begin
+	increment <= 1;
+	end else begin
 		if (RequestQueryRt) begin
-		`ifdef DEBUG_ROB $display("INFO : ROB : Request Query Rt "); `endif
-		Rt_token 	<= { Token_tag_rt , Token_valid_rt };
-		Rt_Data_spec  	<= Reg_File_Tmp_data_Rt [33:2];
-		Rt_Data_valid	<= Reg_File_Tmp_data_Rt [1];
-		RequestQueryRt_reg	<= 0;
-		OrderQueueNew_write  <= 0; // Order queue : write enable
+			`ifdef DEBUG_ROB $display("INFO : ROB : Request Query Rt "); `endif
+			Rt_reg_reg		<= Rt_reg;
+			Rt_token 		<= { Token_tag_rt , Token_valid_rt };
+			Rt_Data_spec  		<= Reg_File_Tmp_data_Rt [33:2];
+			Rt_Data_valid		<= Reg_File_Tmp_data_Rt [1];
+			RequestQueryRt_reg	<= 0;
+			OrderQueueNew_write  	<= 0; // Order queue : write enable
 		end
+		
 		if (RequestQueryRs) begin
-		`ifdef DEBUG_ROB $display("INFO : ROB : Request Query Rs "); `endif
-		Rs_token 	<= { Token_tag_rs , Token_valid_rs };
-		Rs_Data_spec  	<= Reg_File_Tmp_data_Rs [33:2];
-		Rs_Data_valid 	<= Reg_File_Tmp_data_Rs [1];
-		RequestQueryRs_reg	<= 0;
-		OrderQueueNew_write  <= 0; // Order queue : write enable
+			`ifdef DEBUG_ROB $display("INFO : ROB : Request Query Rs "); `endif
+			Rs_reg_reg		<= Rs_reg;
+			Rs_token 		<= { Token_tag_rs , Token_valid_rs };
+			Rs_Data_spec  		<= Reg_File_Tmp_data_Rs [33:2];
+			Rs_Data_valid 		<= Reg_File_Tmp_data_Rs [1];
+			RequestQueryRs_reg	<= 0;
+			OrderQueueNew_write  	<= 0; // Order queue : write enable
+		end 
+
+		if (!RequestQueryRs && !RequestQueryRt && !RequestAddNew) begin
+			if (!OrderQueueEmpty) begin
+				OrderQueueNew_read 	<= 1;
+				Rs_reg_reg 		<= OrderQueue_data;
+				OrderQueue_data_temp 	<= OrderQueue_data;
+
+				if (Reg_File_Tmp_data_Rs[1] && Reg_File_Tmp_data_Rs [0]) begin 
+					if (OrderQueue_data_temp    == Reg_File_Tmp_data_Rs [72:68]) begin
+						`ifdef DEBUG_ROB $display("INFO : ROB : Retired tag %d ", OrderQueue_data_temp); `endif
+						Retire_rd_tag 		<= OrderQueue_data_temp;
+						Retire_rd_reg 		<= Reg_File_Tmp_data_Rs[72:68];
+						Retire_data		<= Reg_File_Tmp_data_Rs[33: 2];
+						Retire_pc		<= Reg_File_Tmp_data_Rs[67:36];
+						Retire_rd_tag_reg 	<= Reg_File_Tmp_data_Rs[72:68];
+						Retire_branch		<= Cdb_branch;
+						Retire_valid 		<= 1'b1;
+						Retire_branch_taken 	<= Cdb_branch_taken;
+						Retire_store_ready  	<= (Reg_File_Tmp_data_Rs[35:34]==2'b10)? 1: 0;
+						Retire_valid_reg  	<= 1; 
+						
+						// TODO : invalidate register at regfiletemp:
+						
+						OrderQueueNew_write  	<= 0; // Order queue : write enable
+						increment <= 0;
+					end else 
+						increment <= 1;
+				end else 
+					increment <= 1;
+			end else begin
+				OrderQueueNew_read <= 0;
+			end
 		end
+
 		if (RequestUpdate) begin
-		`ifdef DEBUG_ROB $display("INFO : ROB : Update_entry %d %d", Cdb_rd_tag,Cdb_data); `endif
- 		Wen_rst 	<= 0; // RST : write enable
-		NewEntry	<= 0; // Register file temp : write enable
-		Update_entry 	<= 1;
-		RequestUpdate_reg <= 0;
-		RequestAddNew_reg <= 0;
-		OrderQueueNew_write  <= 0; // Order queue : write enable
-		AddrRFT		<= Cdb_rd_tag;	
-		NewEntryData 	<= {Dispatch_Rd_reg,Dispatch_pc,Dispatch_inst_type,Cdb_data,Cdb_valid,1'b1};
+			`ifdef DEBUG_ROB $display("INFO : ROB : Update_entry %d %d", Cdb_rd_tag,Cdb_data); `endif
+ 			// solo se hace el update para Cdb_data,Cdb_valid
+			Wen_rst 		<= 0; // RST : write enable
+			NewEntry		<= 0; // Register file temp : write enable
+			Update_entry 		<= 1; // Register file temp : update antry enable
+			OrderQueueNew_write  	<= 0; // Order queue : write enable
+			RequestUpdate_reg 	<= 0;
+			RequestAddNew_reg 	<= 0;
+			AddrRFT			<= Cdb_rd_tag;	
+			NewEntryData 		<= {Dispatch_Rd_reg,Dispatch_pc,Dispatch_inst_type,Cdb_data,Cdb_valid,1'b0};
 		end else if (RequestAddNew) begin 
-		`ifdef DEBUG_ROB $display("INFO : ROB : Add new entry"); `endif
- 		Wen_rst 	<= 1; // RST : write enable
-		NewEntry	<= 1; // Register file temp : write enable
-		OrderQueueNew_write <= 1; // Order queue : write enable
-		Update_entry 	<= 0;
-		AddrRFT		<= Dispatch_Rd_tag;	
-		NewEntryData  	<= {Dispatch_Rd_reg,Dispatch_pc,Dispatch_inst_type,32'b0,1'b0,1'b1}; // nuevo valor para le regsiter file temp 
-		OrderQueueDataIn<= Dispatch_Rd_tag; // nuevo valor para la rder queue;
-		RequestAddNew_reg	<= 0;
-		RequestUpdate_reg <= 0;
+			`ifdef DEBUG_ROB $display("INFO : ROB : Add new entry"); `endif
+			Wen_rst 		<= 1; // RST : write enable
+			NewEntry		<= 1; // Register file temp : write enable
+			OrderQueueNew_write 	<= 1; // Order queue : write enable
+			Update_entry 		<= 0; // Register file temp : update antry enable
+			RequestAddNew_reg	<= 0;
+			RequestUpdate_reg 	<= 0;
+			AddrRFT			<= Dispatch_Rd_tag;	
+			NewEntryData  		<= {Dispatch_Rd_reg,Dispatch_pc,Dispatch_inst_type,32'b0,1'b0,1'b1}; // nuevo valor para le regsiter file temp 
+			OrderQueueDataIn	<= Dispatch_Rd_tag; // nuevo valor para la rder queue;
 		end
-		if (RequestRetire) begin 
-		OrderQueueNew_read<=0;
-		//OrderQueueNew_read<=1;
-		/*if (OrderQueue_data == Rt_reg) begin
-		`ifdef DEBUG_ROB $display("INFO : ROB : Retire tag %d ", OrderQueue_data); `endif
- 		Retire_rd_tag 	<= OrderQueue_data;
- 		Retire_rd_reg 	<= Reg_File_Tmp_data_Rt[72:68];
- 		Retire_data	<= Reg_File_Tmp_data_Rt[33: 2];
-		Retire_pc	<= Reg_File_Tmp_data_Rt[67:36];
-		Retire_branch	<= Cdb_branch;
- 		Retire_valid 	<= 1'b1;
-		Retire_branch_taken <= Cdb_branch_taken;
- 		Retire_store_ready  <=  (Reg_File_Tmp_data_Rt[35:34]==2'b10)? 1: 0;
-		Retire_rd_tag_reg <=  Reg_File_Tmp_data_Rt[72:68];
-		Retire_valid_reg  <= 1; 
-		OrderQueueNew_write  <= 0; // Order queue : write enable
-		end*/
-	/*	if (OrderQueue_data == Rs_reg) begin
-		`ifdef DEBUG_ROB $display("INFO : ROB : Retire tag %d ", OrderQueue_data); `endif
- 		Retire_rd_tag 	<= OrderQueue_data;
- 		Retire_rd_reg 	<= Reg_File_Tmp_data_Rs[72:68];
- 		Retire_data	<= Reg_File_Tmp_data_Rs[33: 2];
-		Retire_pc	<= Reg_File_Tmp_data_Rs[67:36];
-		Retire_branch	<= Cdb_branch;
- 		Retire_valid 	<= 1'b1;
-		Retire_branch_taken <= Cdb_branch_taken;
- 		Retire_store_ready  <=  (Reg_File_Tmp_data_Rs[35:34]==2'b10)? 1: 0;
-		Retire_rd_tag_reg <=  Reg_File_Tmp_data_Rs[72:68]; 
-		Retire_valid_reg  <= 1; 
-		OrderQueueNew_write  <= 0; // Order queue : write enable
-		end
-	*/	end
 	end
 end
 
@@ -247,7 +247,8 @@ order_queue order_queue (
 	.out_data	(OrderQueueNew_read),
 	.outData	(OrderQueue_data),
 	.full		(OrderQueueFull),
-	.empty		(OrderQueueEmpty)
+	.empty		(OrderQueueEmpty),
+	.increment 	(increment)
 	);
 
 regfiletmp regfiletmp (
@@ -258,9 +259,9 @@ regfiletmp regfiletmp (
 	.New_entry	(NewEntry),
 	.Update_entry	(Update_entry),
 	.Data_out1	(Reg_File_Tmp_data_Rs),
-	.Rd_Addr1	(Rs_reg),
+	.Rd_Addr1	(Rs_reg_logic),
 	.Data_out2	(Reg_File_Tmp_data_Rt),
-	.Rd_Addr2	(Rt_reg)
+	.Rd_Addr2	(Rt_reg_logic)
 );
 
 endmodule 
