@@ -20,6 +20,21 @@
 //		Mas informacion:
 //		http://www.d.umn.edu/~gshute/spimsal/talref.html#rtype
 //		http://www.mrc.uidaho.edu/mrc/people/jff/digital/MIPSir.html
+//
+//		ALU OPCODES:
+//
+//		   parameter OP_AND  = 4'b0000;  //0
+//		   parameter OP_OR   = 4'b0001;  //1
+//		   parameter OP_ADD  = 4'b0010;  //2
+//		   parameter OP_ADDU = 4'b0011;  //3
+//		   parameter OP_SUB  = 4'b0110;  //6
+//		   parameter OP_SLT  = 4'b0111;  //7
+//		   parameter OP_SLTU = 4'b1010;  //A
+//		   parameter OP_NOR  = 4'b1100;  //C
+//		   parameter OP_SLL  = 4'b1000;  //8
+//		   parameter OP_SRL  = 4'b1001;  //9    
+//		   parameter OP_BEQ  = 4'b0100;  //4
+//		   parameter OP_BNQ  = 4'b0101;  //5 
 //--------------------------------------------------------------------------------------------------------------------------
 
 module decoder (
