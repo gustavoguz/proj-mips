@@ -22,7 +22,7 @@ module IssueQueueInt (
    input       [31:0]   Dispatch_Rt_Data,
    input       [ 4:0]   Dispatch_Rt_Tag,
    input                Dispatch_Rt_Data_Val,   // '1' Data is valid; '0' Data is unknown
-   input       [ 2:0]   Dispatch_Opcode,
+   input       [ 3:0]   Dispatch_Opcode,
    input       [ 4:0]   Dispatch_Shfamt,
    input                Dispatch_Enable,
    output reg           IssueQue_Full,
@@ -35,7 +35,7 @@ module IssueQueueInt (
    output reg  [31:0]   IssueQue_Rs_Data,
    output reg  [31:0]   IssueQue_Rt_Data,
    output reg  [ 4:0]   IssueQue_Rd_Tag,
-   output reg  [ 2:0]   IssueQue_Opcode,
+   output reg  [ 3:0]   IssueQue_Opcode,
    output reg  [ 4:0]   IssueQue_Shfamt,
    input                Issueblk_Issue,  // '1' Instruction has been issued
    // Interface with Retire Bus
@@ -48,7 +48,7 @@ module IssueQueueInt (
 
 
    // Queue data-fields registers
-   reg [ 2:0] opcode_reg  [0:N_QUEUE-1];
+   reg [ 3:0] opcode_reg  [0:N_QUEUE-1];
    reg [ 4:0] shfamt_reg  [0:N_QUEUE-1];
    reg [ 4:0] rd_tag_reg  [0:N_QUEUE-1];
    reg [ 4:0] rs_tag_reg  [0:N_QUEUE-1];
@@ -140,7 +140,7 @@ module IssueQueueInt (
             queue_issue[3]   = 1'b1;
             IssueQue_Ready   = 1'b1;
             IssueQue_Opcode  = opcode_reg [3];
-            IssueQue_Shfamt  = shfamt_reg [4];
+            IssueQue_Shfamt  = shfamt_reg [3];
             IssueQue_Rs_Data = rs_data_reg[3];
             IssueQue_Rt_Data = rt_data_reg[3];
             IssueQue_Rd_Tag  = rd_tag_reg [3];  
@@ -167,7 +167,7 @@ module IssueQueueInt (
       if(Rst) begin
          for(i = 0; i < N_QUEUE; i = i + 1) begin
             
-            opcode_reg  [i] <= 3'b0;
+            opcode_reg  [i] <= 4'b0;
             shfamt_reg  [i] <= 5'b0;
             rd_tag_reg  [i] <= 5'b0;
             rs_tag_reg  [i] <= 5'b0;

@@ -5,7 +5,7 @@ export DESIGN_DIR
 export DEBUG
 
 
-BLOCK_NAME:=FiFo
+BLOCK_NAME:=ISSUE_UNIT
 SUB_LIST:=""
 
 test: query_blocks query_blockdir query_rtl query_verilog query_testbench
