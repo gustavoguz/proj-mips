@@ -1,3 +1,4 @@
+
 //--------------------------------------------------------------------------------------------------------------------------
 // Design Name 	: Decoder
 // File Name   	: decoder.v
@@ -20,213 +21,225 @@
 //		Mas informacion:
 //		http://www.d.umn.edu/~gshute/spimsal/talref.html#rtype
 //		http://www.mrc.uidaho.edu/mrc/people/jff/digital/MIPSir.html
-//
-//		ALU OPCODES:
-//
-//		   parameter OP_AND  = 4'b0000;  //0
-//		   parameter OP_OR   = 4'b0001;  //1
-//		   parameter OP_ADD  = 4'b0010;  //2
-//		   parameter OP_ADDU = 4'b0011;  //3
-//		   parameter OP_SUB  = 4'b0110;  //6
-//		   parameter OP_SLT  = 4'b0111;  //7
-//		   parameter OP_SLTU = 4'b1010;  //A
-//		   parameter OP_NOR  = 4'b1100;  //C
-//		   parameter OP_SLL  = 4'b1000;  //8
-//		   parameter OP_SRL  = 4'b1001;  //9    
-//		   parameter OP_BEQ  = 4'b0100;  //4
-//		   parameter OP_BNQ  = 4'b0101;  //5 
 //--------------------------------------------------------------------------------------------------------------------------
 
 module decoder (
-	input              	clock,
-	input             	reset,
-	input  		[31:0] 	Inst,
-	output reg 	[ 2:0]	Dispatch_opcode,	//: 3‚Äêbit opcode para la ALU. : 1 ‚Äê bit opcode para distinguir entre LD y ST.
-	output reg	[ 4:0]	Dispatch_shfamt,	//:: 5-bits en caso de una instrucci√≥n del tipo shift
-	output reg 		Dispatch_en_integer,	//: unidad de despacho intenta escribir una instrucci√≥n en la cola de ejecuci√≥n de enteros.
-	output reg 		Dispatch_en_ld_st,	//: DU intenta escribir una instrucci√≥n en la cola LD/ST.
-	output reg 	[15:0]	Dispatch_imm_ld_st,	//: 16 ‚Äê bit del campo inmediato para calcular la direcci√≥n de memoria
-	output reg 		Dispatch_en_mult
+	input              Clk,
+	input             	Rst,
+	input  		   [31:0] Inst,
+	output reg 	[ 3:0]	Dispatch_Opcode,	//: 3?bit opcode para la ALU. : 1 ? bit opcode para distinguir entre LD y ST.
+	output reg	 [ 4:0]	Dispatch_Shfamt,	//:: 5-bits en caso de una instrucciÛn del tipo shift  Necesario?
+	output reg 	[31:0]	Dispatch_Imm_LS,	//: 32  bit del campo inmediato para calcular la direcciÛn de memoria, 32 por las extensiones
+	output reg 		      Dispatch_en_Int,	//: unidad de despacho intenta escribir una instrucciÛn en la cola de ejecuciÛn de enteros.
+	output reg 		      Dispatch_en_LS,	//: DU intenta escribir una instrucciÛn en la cola LD/ST.
+	output reg 		      Dispatch_en_Mult
+	//output reg         Dispatch_en_Jmp  // Necesario?
 		);
 
-always @(posedge clock, posedge reset) begin
-	if (!reset) begin
-	//TODO
-	Dispatch_opcode<=3'b000;
-	Dispatch_en_integer	<= 1'b0;
-	Dispatch_en_mult	<= 1'b0;
-	Dispatch_en_ld_st	<= 1'b0;
-	end else begin
-	casez (Inst[31:26]) 
- 		6'b000000 : begin //R-Type Instructions (Opcode 000000)
-			//$display("INFO : R-Type Instructions (Opcode 000000) == %b",Inst[31:26]);
-				Dispatch_opcode 	<= 3'b000;
-				Dispatch_shfamt 	<= Inst[10:6];
-				Dispatch_imm_ld_st	<= Inst[15:0];
-				Dispatch_en_integer	<= 1'b0;
-				Dispatch_en_mult	<= 1'b0;
-				Dispatch_en_ld_st	<= 1'b0;
-			case (Inst[5:0])
-			6'b100000 : begin 
-			$display("INFO : Decoding Intruction = ADD");
-			end
-			6'b100001 : begin 
-			$display("INFO : Decoding Intruction = ADDU");
-			end
-			6'b100100 : begin 
-			$display("INFO : Decoding Intruction = AND");
-			end
-			6'b011010 : begin 
-			$display("INFO : Decoding Intruction = DIV");
-			end
-			6'b011011 : begin 
-			$display("INFO : Decoding Intruction = DIVU");
-			end
-			6'b001000 : begin 
-			$display("INFO : Decoding Intruction = JR");
-			end
-			6'b000000 : begin 
-			$display("INFO : Decoding Intruction = SLL");
-			end
-			6'b010000 : begin 
-			$display("INFO : Decoding Intruction = MFHI");
-			end
-			6'b010010 : begin 
-			$display("INFO : Decoding Intruction = MFLO");
-			end
-			6'b011000 : begin 
-			$display("INFO : Decoding Intruction = MULT");
-			end
-			6'b011001 : begin 
-			$display("INFO : Decoding Intruction = MULTU");
-			end
-			6'b100101 : begin 
-			$display("INFO : Decoding Intruction = OR");
-			end
-			6'b000100 : begin 
-			$display("INFO : Decoding Intruction = SLLV");
-			end
-			6'b101010 : begin 
-			$display("INFO : Decoding Intruction = SLT");
-			end
-			6'b101011 : begin 
-			$display("INFO : Decoding Intruction = SLTU");
-			end
-			6'b000011 : begin 
-			$display("INFO : Decoding Intruction = SRA");
-			end
-			6'b000010 : begin 
-			$display("INFO : Decoding Intruction = SRL");
-			end
-			6'b000110 : begin 
-			$display("INFO : Decoding Intruction = SRLV");
-			end
-			6'b100010 : begin 
-			$display("INFO : Decoding Intruction = SUB");
-			end
-			6'b100011 : begin 
-			$display("INFO : Decoding Intruction = SUBU");
-			end
-			6'b001100 : begin 
-			$display("INFO : Decoding Intruction = SYSCALL");
-			end
-			6'b100110 : begin 
-			$display("INFO : Decoding Intruction = XOR");
-			end
-			default : $display("ERROR : Decoding Intruction type R");
-			endcase
-			end // End Instruction type R
-  		6'b00001? : begin //J-Type Instructions (Opcode 00001x)
-			//$display("INFO : J-Type Instructions (Opcode 00001x) == %b",Inst[31:26]);
-			Dispatch_opcode 	<= 3'b001;
-			Dispatch_shfamt 	<= Inst[10:6];
-			Dispatch_imm_ld_st	<= Inst[15:0];
-			Dispatch_en_integer	<= 1'b0;
-			Dispatch_en_mult	<= 1'b0;
-			Dispatch_en_ld_st	<= 1'b0;
-			case (Inst[31:26]) 
-			6'b000010 : begin
-			$display("INFO : Decoding Intruction = J");
-			end
-			6'b000011 : begin
-			$display("INFO : Decoding Intruction = JAL");
-			end
-			default : $display("ERROR : Decoding Instruction type J");
-			endcase
-			end // End Intruction type J
-  		6'b0100?? : begin //Coprocessor Instructions (Opcode 0100xx)
-			//$display("INFO : CoProc Instructions (Opcode 0100xx) == %b",Inst[31:26]);
-			Dispatch_opcode 	<= 3'b010;
-			Dispatch_shfamt 	<= Inst[10:6];
-			Dispatch_imm_ld_st	<= Inst[15:0];
-			Dispatch_en_integer	<= 1'b0;
-			Dispatch_en_mult	<= 1'b0;
-			Dispatch_en_ld_st	<= 1'b0;
-			case (Inst[31:26]) 
-			default : $display("ERROR : Decoding Instruction type CI");
-			endcase
-			end
-  		default : begin //I-Type Instructions (All opcodes except 000000, 00001x, and 0100xx)
-			//$display("INFO : I-Type Instructions (All opcodes..) == %b",Inst[31:26]);
-			Dispatch_opcode 	<= 3'b011;
-			Dispatch_shfamt 	<= Inst[10:6];
-			Dispatch_imm_ld_st	<= Inst[15:0];
-			Dispatch_en_integer	<= 1'b1;
-			Dispatch_en_mult	<= 1'b0;
-			Dispatch_en_ld_st	<= 1'b0;
-			case (Inst[31:26]) 
-			6'b001000 : begin
-			$display("INFO : Decoding Intruction = ADDI");
-			end
-			6'b001001 : begin
-			$display("INFO : Decoding Intruction = ADDIU");
-			end
-			6'b001100 : begin
-			$display("INFO : Decoding Intruction = ANDI");
-			end
-			6'b000100 : begin
-			$display("INFO : Decoding Intruction = BEQ");
-			end
-			6'b000001 : begin
-			$display("INFO : Decoding Intruction = BGEZ");
-			end
-			6'b000111 : begin
-			$display("INFO : Decoding Intruction = BGTZ");
-			end
-			6'b000110 : begin
-			$display("INFO : Decoding Intruction = BLEZ");
-			end
-			6'b000101 : begin
-			$display("INFO : Decoding Intruction = BNE");
-			end
-			6'b001111 : begin
-			$display("INFO : Decoding Intruction = LUI");
-			end
-			6'b001101 : begin
-			$display("INFO : Decoding Intruction = ORI");
-			end
-			6'b001010 : begin
-			$display("INFO : Decoding Intruction = SLTI");
-			end
-			6'b001011 : begin
-			$display("INFO : Decoding Intruction = SLTIU");
-			end
-			6'b001110 : begin
-			$display("INFO : Decoding Intruction = XORI");
-			end
-			6'b101011: begin
-			$display("INFO : Decoding Intruction = SW");
-			end
-			6'b100011 : begin
-			$display("INFO : Decoding Intruction = LW");
-			end
-			6'bxxxxxx : begin
-			$display("INFO : Decoding Intruction = XXXX");
-			end
-			default : $display("ERROR : Decoding Instruction type I");
-			endcase
-		end
-	endcase 
-	end
-end 
+
+   parameter R_TYPE  = 6'b000000;
+   parameter R_ADD   = 6'h20;
+   parameter R_ADDU  = 6'h21;
+   parameter R_AND   = 6'h24;
+   parameter R_NOR   = 6'h27;
+   parameter R_OR    = 6'h25;
+   parameter R_SLT   = 6'h2A;
+   parameter R_SLTU  = 6'h2B;
+   parameter R_SUB   = 6'h22;
+   parameter R_SLL   = 6'h00;
+   parameter R_SRL   = 6'h02;
+   parameter R_MULT  = 6'h18;
+   parameter I_ADDI  = 6'h08;
+   parameter I_ADDIU = 6'h09;
+   parameter I_ANDI  = 6'h0C;
+   parameter I_BEQ   = 6'h04;
+   parameter I_BNQ   = 6'h05;
+   parameter I_LDW   = 6'h23;
+   parameter I_ORI   = 6'h0D;
+   parameter I_SLTI  = 6'h0A;
+   parameter I_STW   = 6'h2B;
+   parameter J_JUMP  = 6'h02;
+   
+   parameter OP_AND  = 4'b0000;  //0
+   parameter OP_OR   = 4'b0001;  //1
+   parameter OP_ADD  = 4'b0010;  //2
+   parameter OP_ADDU = 4'b0011;  //3
+   parameter OP_SUB  = 4'b0110;  //6
+   parameter OP_SLT  = 4'b0111;  //7
+   parameter OP_SLTU = 4'b1010;  //A
+   parameter OP_NOR  = 4'b1100;  //C
+   parameter OP_SLL  = 4'b1000;  //8
+   parameter OP_SRL  = 4'b1001;  //9    
+   parameter OP_BEQ  = 4'b0100;  //4
+   parameter OP_BNQ  = 4'b0101;  //5
+   parameter OP_STW  = 4'b0000;  
+   parameter OP_LDW  = 4'b0001; 
+
+   always @(posedge Clk, posedge Rst) begin
+	    
+	    if (Rst) begin
+	       //TODO
+	       Dispatch_Opcode      <= 4'b0000;
+	       Dispatch_Shfamt      <= 5'b00000;
+	       Dispatch_Imm_LS      <= 32'h00000000; 
+	       Dispatch_en_Int    	 <= 1'b0;
+	       Dispatch_en_Mult	    <= 1'b0;
+	       Dispatch_en_LS   	   <= 1'b0;
+	       //Dispatch_en_Jmp      <= 1'b0;
+	    end
+	    else begin
+	       
+	       // Default values
+	       Dispatch_Opcode      <= 4'b0000;
+	       Dispatch_Shfamt      <= 5'b00000;
+	       Dispatch_Imm_LS      <= 32'h00000000; 
+	       Dispatch_en_Int    	 <= 1'b0;
+	       Dispatch_en_Mult	    <= 1'b0;
+	       Dispatch_en_LS   	   <= 1'b0;
+	       //Dispatch_en_Jmp      <= 1'b0;
+	           
+	       case (Inst[31:26])
+	          //R-Type Instructions (Opcode 000000) 
+ 		        R_TYPE : begin 
+			         
+			         $display("INFO : R-Type Instructions (Opcode 000000)");	
+			         // Default values for R_Types
+			         Dispatch_Shfamt      <= Inst[10:6];
+			         		         	         			      
+			         case (Inst[5:0])
+			            R_ADD : begin 
+			               $display("INFO : Decoding Intruction = ADD");
+			               Dispatch_Opcode      <= OP_ADD;                  
+	                   Dispatch_en_Int    	 <= 1'b1;
+			            end
+			            R_ADDU : begin 
+			               $display("INFO : Decoding Intruction = ADDU");
+			               Dispatch_Opcode      <= OP_ADDU;                  
+	                   Dispatch_en_Int    	 <= 1'b1;
+			            end
+			            R_AND : begin 
+			               $display("INFO : Decoding Intruction = AND");
+			               Dispatch_Opcode      <= OP_AND;                  
+	                   Dispatch_en_Int    	 <= 1'b1;
+			            end
+			            R_NOR : begin 
+			               $display("INFO : Decoding Intruction = NOR");
+			               Dispatch_Opcode      <= OP_NOR;                  
+	                   Dispatch_en_Int    	 <= 1'b1;
+			            end
+			            R_OR : begin 
+			               $display("INFO : Decoding Intruction = OR");
+			               Dispatch_Opcode      <= OP_OR;                  
+	                   Dispatch_en_Int    	 <= 1'b1;
+			            end
+			            R_SLT : begin 
+			               $display("INFO : Decoding Intruction = SLT");
+			               Dispatch_Opcode      <= OP_SLT;                  
+	                   Dispatch_en_Int    	 <= 1'b1;
+			            end
+			            R_SLTU : begin 
+			               $display("INFO : Decoding Intruction = SLTU");
+			               Dispatch_Opcode      <= OP_SLTU;                  
+	                   Dispatch_en_Int    	 <= 1'b1;
+			            end
+			            R_SUB : begin 
+			               $display("INFO : Decoding Intruction = SUB");
+			               Dispatch_Opcode      <= OP_SUB;                  
+	                   Dispatch_en_Int    	 <= 1'b1;
+			            end
+			            R_SLL : begin 
+			               $display("INFO : Decoding Intruction = SLL");
+			               Dispatch_Opcode      <= OP_SLL;                  
+	                   Dispatch_en_Int    	 <= 1'b1;
+			            end
+			            R_SRL : begin 
+			               $display("INFO : Decoding Intruction = SRL");
+			               Dispatch_Opcode      <= OP_SRL;                  
+	                   Dispatch_en_Int    	 <= 1'b1;
+			            end
+			            R_MULT : begin 
+			               $display("INFO : Decoding Intruction = MULT");
+			               Dispatch_Opcode      <= 4'b0000;                  
+	                   Dispatch_en_Mult    	<= 1'b1;
+			            end	            
+			            default : begin
+			               $display("ERROR : Decoding Intruction type R");
+			            end
+			            
+			         endcase
+			         
+			      end // End Instruction type R
+			      
+			      //I-Type Instructions 
+			      I_ADDI : begin 
+			         $display("INFO : Decoding Intruction = ADDI");
+			         Dispatch_Opcode      <= OP_ADD;
+			         Dispatch_Imm_LS      <= {{16{Inst[15:0]}},Inst[15:0]};                  
+	             Dispatch_en_Int    	 <= 1'b1;
+			      end
+			      I_ADDIU : begin 
+			         $display("INFO : Decoding Intruction = ADDIU");
+			         Dispatch_Opcode      <= OP_ADDU;
+			         Dispatch_Imm_LS      <= {{16{Inst[15:0]}},Inst[15:0]};                  
+	             Dispatch_en_Int    	 <= 1'b1;
+			      end
+			      I_ANDI : begin 
+			         $display("INFO : Decoding Intruction = ANDI");
+			         Dispatch_Opcode      <= OP_AND;
+			         Dispatch_Imm_LS      <= {{16{1'b0}},Inst[15:0]};                  
+	             Dispatch_en_Int    	 <= 1'b1;
+			      end
+			      I_BEQ : begin 
+			         $display("INFO : Decoding Intruction = BEQ");
+			         Dispatch_Opcode      <= OP_BEQ;
+			         Dispatch_Imm_LS      <= {{16{1'b0}},Inst[15:0]};                  
+	             Dispatch_en_Int    	 <= 1'b1;
+			      end
+			      I_BNQ : begin 
+			         $display("INFO : Decoding Intruction = BNQ");
+			         Dispatch_Opcode      <= OP_BNQ;
+			         Dispatch_Imm_LS      <= {{16{1'b0}},Inst[15:0]};                  
+	             Dispatch_en_Int    	 <= 1'b1;
+			      end
+			      I_LDW : begin 
+			         $display("INFO : Decoding Intruction = LDW");
+			         Dispatch_Opcode      <= OP_LDW;
+			         Dispatch_Imm_LS      <= {{16{Inst[15:0]}},Inst[15:0]};                 
+	             Dispatch_en_LS     	 <= 1'b1;
+			      end
+			      I_ORI : begin 
+			         $display("INFO : Decoding Intruction = ORI");
+			         Dispatch_Opcode      <= OP_OR;
+			         Dispatch_Imm_LS      <= {{16{1'b0}},Inst[15:0]};                  
+	             Dispatch_en_Int    	 <= 1'b1;
+			      end
+			      I_SLTI : begin 
+			         $display("INFO : Decoding Intruction = SLTI");
+			         Dispatch_Opcode      <= OP_SLT;
+			         Dispatch_Imm_LS      <= {{16{1'b0}},Inst[15:0]};                  
+	             Dispatch_en_Int    	 <= 1'b1;
+			      end
+			      I_STW : begin 
+			         $display("INFO : Decoding Intruction = STW");
+			         Dispatch_Opcode      <= OP_STW;
+			         Dispatch_Imm_LS      <= {{16{Inst[15:0]}},Inst[15:0]};                  
+	             Dispatch_en_LS     	 <= 1'b1;
+			      end
+			      // End Instruction type I
+			      
+			      //J-Type Instructions
+			      J_JUMP : begin 
+			         $display("INFO : Decoding Intruction = JUMP");                  
+	             //Dispatch_en_Jmp      <= 1'b1; 
+			      end
+			      
+			      default : begin
+			         $display("ERROR : Decoding Instruction type I or J");
+			      end
+			      	
+			   endcase
+		  
+		  end // end else
+   end //end always
+
 endmodule
