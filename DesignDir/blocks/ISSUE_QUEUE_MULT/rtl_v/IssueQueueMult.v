@@ -5,7 +5,7 @@
 // Author                : Alejandro Guerena
 // E-Mail                : md679705@iteso.mx
 // Date of last revision : March-2012
-// Notes                 : 
+// Notes                 : 32 bits to 16 bits for rs, rt and cdb
 //
 /****************************************************************************************************/  
 
@@ -16,22 +16,22 @@ module IssueQueueMult (
    input                Rst,
    // Interface with Dispatch
    input       [ 4:0]   Dispatch_Rd_Tag,
-   input       [31:0]   Dispatch_Rs_Data,
+   input       [15:0]   Dispatch_Rs_Data,
    input       [ 4:0]   Dispatch_Rs_Tag,
    input                Dispatch_Rs_Data_Val,   // '1' Data is valid; '0' Data is unknown
-   input       [31:0]   Dispatch_Rt_Data,
+   input       [15:0]   Dispatch_Rt_Data,
    input       [ 4:0]   Dispatch_Rt_Tag,
    input                Dispatch_Rt_Data_Val,   // '1' Data is valid; '0' Data is unknown
    input                Dispatch_Enable,
    output reg           IssueQue_Full,
    // Interface with CDB
    input       [ 4:0]   CDB_Tag,
-   input       [31:0]   CDB_Data,
+   input       [15:0]   CDB_Data,
    input                CDB_Valid,  // '1' Data and TAG are valid
    // Interface with Issue Unit
    output reg           IssueQue_Ready,
-   output reg  [31:0]   IssueQue_Rs_Data,
-   output reg  [31:0]   IssueQue_Rt_Data,
+   output reg  [15:0]   IssueQue_Rs_Data,
+   output reg  [15:0]   IssueQue_Rt_Data,
    output reg  [ 4:0]   IssueQue_Rd_Tag,
    input                Issueblk_Issue,  // '1' Instruction has been issued
    // Interface with Retire Bus
@@ -44,10 +44,10 @@ module IssueQueueMult (
    // Queue data-fields registers
    reg [ 4:0] rd_tag_reg  [0:N_QUEUE-1];
    reg [ 4:0] rs_tag_reg  [0:N_QUEUE-1];
-   reg [31:0] rs_data_reg [0:N_QUEUE-1];
+   reg [15:0] rs_data_reg [0:N_QUEUE-1];
    reg        rs_val_reg  [0:N_QUEUE-1];
    reg [ 4:0] rt_tag_reg  [0:N_QUEUE-1];
-   reg [31:0] rt_data_reg [0:N_QUEUE-1];
+   reg [15:0] rt_data_reg [0:N_QUEUE-1];
    reg        rt_val_reg  [0:N_QUEUE-1];
    reg        valid_reg   [0:N_QUEUE-1];
 
@@ -150,10 +150,10 @@ module IssueQueueMult (
          for(i = 0; i < N_QUEUE; i = i + 1) begin
             rd_tag_reg  [i] <= 5'b0;
             rs_tag_reg  [i] <= 5'b0;
-            rs_data_reg [i] <= 32'h0;
+            rs_data_reg [i] <= 16'h0;
             rs_val_reg  [i] <= 1'b0;
             rt_tag_reg  [i] <= 5'b0;
-            rt_data_reg [i] <= 32'h0;
+            rt_data_reg [i] <= 16'h0;
             rt_val_reg  [i] <= 1'b0;
             valid_reg   [i] <= 1'b0;
          end
