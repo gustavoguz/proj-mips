@@ -17,7 +17,8 @@ module fifo (
 	rinc, 
 	rclk, 
 	rrst_n,
-	increment
+	increment,
+	flush
 	);
 
 parameter DSIZE = 5;
@@ -31,6 +32,7 @@ input [DSIZE-1:0] wdata;
 input winc, wclk, wrst_n;
 input rinc, rclk, rrst_n;
 input increment;
+input flush;
 
 reg [ASIZE_F-1:0] wptr;
 reg [ASIZE_F-1:0] rptr;
@@ -41,7 +43,8 @@ reg [DSIZE-1:0] ex_mem [0:MEMDEPTH-1];
 
 always @(posedge wclk or negedge wrst_n) begin
 //always @* begin  
-       if (!wrst_n) begin
+       if (!wrst_n || flush) begin
+		`ifdef DEBUG_OrderQueue $display("INFO : FIFO : Flush/Reset write ptr"); `endif
 		wptr = 0;
 	end else if (winc && !wfull) begin
                 ex_mem[wptr[DSIZE-1:0]] = wdata;
@@ -55,7 +58,8 @@ end
 
 always @(posedge rclk or negedge rrst_n) begin
 //always @* begin
-        if (!rrst_n) begin 
+        if (!rrst_n || flush) begin 
+		`ifdef DEBUG_OrderQueue $display("INFO : FIFO : Flush/Reset read ptr"); `endif
 		rptr = 0;
         end else if (rinc && !rempty && !increment) begin
 		rptr = rptr+1;

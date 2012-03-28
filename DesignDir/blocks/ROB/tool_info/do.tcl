@@ -9,4 +9,13 @@ add wave -position anchor sim:/testbench/rob/Retire_rd_tag
 add wave -position anchor sim:/testbench/rob/Reg_File_Tmp_data_Rs;
 add wave -position anchor sim:/testbench/rob/OrderQueue_data_temp
 add wave -position anchor sim:/testbench/rob/RequestAddNew
+add wave -position anchor sim:/testbench/rob/flush
+add wave -position anchor sim:/testbench/rob/flush_reg
+add wave -position anchor sim:/testbench/rob/RequestQueryRs
+add wave -position anchor sim:/testbench/rob/RequestQueryRt
+add wave -position anchor sim:/testbench/rob/RequestUpdate
+add wave -position anchor sim:/testbench/rob/RequestAddNew
+add wave -position anchor sim:/testbench/rob/RequestRetire
+add wave -position anchor sim:/testbench/rob/RequestFlush
+add wave -position anchor sim:/testbench/rob/regfiletmp/RegFile
 run -all

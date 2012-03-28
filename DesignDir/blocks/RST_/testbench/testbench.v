@@ -22,6 +22,7 @@ module testbench;
 	reg 	[31:0] 	Wen0_rst;
 	reg 		Wen_rst;
 	wire 	[31:0]	Wen1_rst;
+	reg 		flush;
 
 rst rst (
   	.clock(clock),
@@ -42,7 +43,8 @@ rst rst (
   	.Waddr_rst(Waddr_rst),
 	.Wen0_rst(Wen0_rst),
 	.Wen_rst(Wen_rst),
-	.Wen1_rst(Wen1_rst) 
+	.Wen1_rst(Wen1_rst),
+	.flush(flush)
 	);
 
 integer i;
@@ -67,50 +69,63 @@ if (i== 31)
 end
 */
 initial  begin
-	clock = 0;
-	reset = 1;
-#10	reset = 0;
-	i=0;
-	Wen0_rst=0;
-	RB_tag_rst  =0;
-	RB_valid_rst=0;
+	clock 		= 0;
+	reset 		= 1;
+#10	reset 		= 0;
+	i		= 0;
+	Wen0_rst	= 0;
+	RB_tag_rst  	= 0;
+	RB_valid_rst	= 0;
+	flush		= 0;
 //write all registers
 
 for (i=0; i<32; i=i+1) begin
 #10 if (clock) begin 
-  	Wen_rst=1;
-	Wdata_rst=i;
-	Waddr_rst=i;
+  	Wen_rst		= 1;
+	Wdata_rst	= i;
+	Waddr_rst	= i;
 	$display ("Write -> %d",i);
 end
 end
 
-#50  	Wen_rst=0;
+#50  	Wen_rst		= 0;
 
 // Read all registers 
 for (i=0; i<32; i=i+1) begin
-#10  	Rsaddr_rst=i;
+#10  	Rsaddr_rst	= i;
 $display ("Read Rs: %d, %d, %d , %d ",Rsaddr_rst,i,Rstag_rst, Rsvalid_rst);
 end
 
 for (i=0; i<32; i=i+1) begin
-#10  	Rtaddr_rst=i;
+#10  	Rtaddr_rst	= i;
 $display ("Read Rt: %d, %d, %d , %d ",Rtaddr_rst,i,Rttag_rst, Rtvalid_rst);
 end
 
 for (i=0; i<32; i=i+1) begin
-#10  	Rsaddr_rst=i;
-  	Rtaddr_rst=i;
+#10  	Rsaddr_rst	= i;
+  	Rtaddr_rst	= i;
 $display ("Read Rs: %d, %d, %d , %d ",Rsaddr_rst,i,Rstag_rst, Rsvalid_rst);
 $display ("Read Rt: %d, %d, %d , %d ",Rtaddr_rst,i,Rttag_rst, Rtvalid_rst);
 end
 // borrar un tag
-#20	RB_tag_rst  =2;
-	RB_valid_rst=1;
-  	Rsaddr_rst=2;
+#20	RB_tag_rst  	= 2;
+	RB_valid_rst	= 1;
+  	Rsaddr_rst	= 2;
 $display ("Clear tag 2: %d, %d, %d , %d ",Rsaddr_rst,i,Rstag_rst, Rsvalid_rst);
 
+// FLUSH
+#20 flush 	= 1;
+// Read all registers 
+for (i=0; i<32; i=i+1) begin
+#10  	Rsaddr_rst	= i;
+$display ("Read Rs: %d, %d, %d , %d ",Rsaddr_rst,i,Rstag_rst, Rsvalid_rst);
+end
 
+for (i=0; i<32; i=i+1) begin
+#10  	Rtaddr_rst	= i;
+$display ("Read Rt: %d, %d, %d , %d ",Rtaddr_rst,i,Rttag_rst, Rtvalid_rst);
+end
+ 
 #30	$finish;
 end
 

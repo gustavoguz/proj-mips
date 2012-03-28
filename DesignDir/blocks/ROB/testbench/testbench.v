@@ -135,15 +135,23 @@ end
 // CDB update:
 Rs_reg_ren = 0;
 Rt_reg_ren = 0;
-for (i=0; i<40; i=i+1) begin
-#10	Cdb_rd_tag=i;
-	Cdb_data=i;
-	Cdb_branch=0;
-	Cdb_branch_taken=0;
+for (i=0; i<40; i=i+1) 	begin
+#10	Cdb_rd_tag	= i;
+	Cdb_data	= i;
+	if (i==10) 		begin
+	Cdb_branch	= 1;
+	Cdb_branch_taken= 0;
+	end else if (i==20) 	begin
+	Cdb_branch	= 1;
+	Cdb_branch_taken= 1;
+	end 	else 		begin
+	Cdb_branch	= 0;
+	Cdb_branch_taken= 0;
+	end
 	if (i<32)
-	Cdb_valid=1;
+	Cdb_valid	= 1;
 	else 
-	Cdb_valid=0;
+	Cdb_valid	= 0;
 end 
 // Lectura del estdo de los registros:
 Rs_reg_ren = 1;
