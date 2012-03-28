@@ -5,7 +5,7 @@ export DESIGN_DIR
 export DEBUG
 
 
-BLOCK_NAME:=ADDRESS_LOGIC
+BLOCK_NAME:=DISPATCH_UNIT
 SUB_LIST:=""
 
 test: query_blocks query_blockdir query_rtl query_verilog query_testbench
