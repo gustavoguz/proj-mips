@@ -17,7 +17,8 @@ module regfiletmp (
 	output	[72: 0]		Data_out1,
 	input	[ 4: 0]		Rd_Addr1,
 	output	[72: 0]		Data_out2,
-	input	[ 4: 0]		Rd_Addr2
+	input	[ 4: 0]		Rd_Addr2,
+	input			flush
 );
 
 // | rd_reg	| PC     | Inst_type | spec_data | spec_valid | valid |
@@ -26,13 +27,14 @@ module regfiletmp (
 reg 	[72: 0] RegFile [31: 0];
 integer i;
 
-always @ (posedge clock or posedge reset) 
+always @ (posedge clock or posedge reset or posedge flush) 
 begin
-	if (reset) 
+	if (reset | flush) 
 	begin
 		for(i=0;i< 32;i=i+1)
 		begin
 		RegFile[i] <= 0; 
+		`ifdef DEBUG_RegFileTmp $display ("INFO : RegFileTmp : REGFILETEMP = %p",RegFile); `endif
 		end	
 	end else 
 	begin

@@ -13,6 +13,7 @@ module testbench;
 	reg	[ 4: 0]		Rd_Addr1;
 	wire	[72: 0]		Data_out2;
 	reg	[ 4: 0]		Rd_Addr2;
+	reg 			flush;
 
 regfiletmp regfiletmp (
 	.clock(clock),
@@ -24,7 +25,8 @@ regfiletmp regfiletmp (
 	.Data_out1(Data_out1),
 	.Rd_Addr1(Rd_Addr1),
 	.Data_out2(Data_out2),
-	.Rd_Addr2(Rd_Addr2)
+	.Rd_Addr2(Rd_Addr2),
+	.flush(flush)
 );
 
 integer i;
@@ -35,19 +37,20 @@ always begin
 end
 
 initial begin
-	clock = 0;
-	reset = 1;
-#5	reset = 0;
-	Update_entry=0;
-	New_entry =0;
-	Rd_Addr1 =0;
-	Rd_Addr2 =0;
+	clock 	= 0;
+	reset 	= 1;
+#5	reset 	= 0;
+	Update_entry	= 0;
+	New_entry 	= 0;
+	Rd_Addr1 	= 0;
+	Rd_Addr2 	= 0;
+	flush		= 0;
 
 //write new entry
 	for (i=0;i<33;i=i+1) begin
-#10		Data_In = {i,32'b1000_0000_0000_0000_0000_0000_0000_0001,2'b10,32'b1,1'b0,1'b1};
-		Waddr 	= i;
-		New_entry = 1;
+#10		Data_In 	= {i,32'b1000_0000_0000_0000_0000_0000_0000_0001,2'b10,32'b1,1'b0,1'b1};
+		Waddr 		= i;
+		New_entry 	= 1;
 	end
 	New_entry = 0;
 //read status
@@ -57,12 +60,20 @@ initial begin
 	end	
 // update entry
 #20	
-	Update_entry =1;
-	Data_In = {5'b00000,32'b0000_0000_0000_0000_0000_0000_0000_0000,2'b11,32'b1,1'b1,1'b1};
-	Waddr 	= 3;
+	Update_entry 	= 1;
+	Data_In 	= {5'b00000,32'b0000_0000_0000_0000_0000_0000_0000_0000,2'b11,32'b1,1'b1,1'b1};
+	Waddr 		= 3;
 #20
-	Rd_Addr1 = 3;
-		
+	Update_entry 	= 0;
+	Rd_Addr1 	= 3;
+#20 
+	flush		= 1;
+//read status
+	for (i=0;i<33;i=i+1) begin
+#10		Rd_Addr1 = i;
+		Rd_Addr2 = i+1;
+	end	
+	
 # 20 $finish;
 end
 

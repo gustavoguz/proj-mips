@@ -90,13 +90,17 @@ reg 		RequestQueryRt;
 reg 		RequestUpdate;
 reg 		RequestAddNew;
 reg 		RequestRetire;
+reg 		RequestFlush;
 
 reg 		RequestAddNew_reg;
 reg 		RequestQueryRs_reg;
 reg 		RequestQueryRt_reg;
 reg 		RequestUpdate_reg;
 reg 		RequestRetire_reg;
+reg 		RequestFlush_reg;
 reg 		OrderQueueNew_write_reg; 
+reg		flush;
+reg		flush_reg;
 
 always @ * begin 
 	if ( Rs_reg_ren ) begin 
@@ -121,26 +125,37 @@ always @* begin
 	end
 end
 
-always @(Cdb_valid or Cdb_data or Cdb_rd_tag or Cdb_branch or Cdb_branch_taken or RequestUpdate_reg) begin
-	if (Cdb_valid) begin 
-		`ifdef DEBUG_ROB $display ("INFO : ROB : Request Update R"); `endif
-		RequestUpdate = 1;
-		// TODO : Mecanismo para invalidar todo el register file temp si Cdb_branch_taken = 1
+always @(Cdb_valid or Cdb_branch or Cdb_branch_taken or RequestFlush_reg) begin
+	if (Cdb_branch_taken && Cdb_valid) begin
+		`ifdef DEBUG_ROB $display ("INFO : ROB : Request Flush"); `endif
+		RequestFlush	= 1;
 	end else begin
-		RequestUpdate = RequestUpdate_reg;
+		RequestFlush	= RequestFlush_reg;
+	end
+end
+
+always @(Cdb_valid or Cdb_data or Cdb_rd_tag or Cdb_branch or Cdb_branch_taken or RequestUpdate_reg) begin
+	if (Cdb_valid && (!Cdb_branch_taken)) begin 
+		`ifdef DEBUG_ROB $display ("INFO : ROB : Request Update R"); `endif
+		RequestUpdate 	= 1;
+		// TODO : Mecanismo para invalidar todo el register file temp si Cdb_branch_taken = 1, puede suceder el update al mismo tiempo que el flush
+	end else begin
+		RequestUpdate 	= RequestUpdate_reg;
 	end
 end
 
 always @* begin
-	Rs_reg_logic = Rs_reg_reg;
-	Rt_reg_logic = Rt_reg_reg;
+	Rs_reg_logic 	= Rs_reg_reg;
+	Rt_reg_logic 	= Rt_reg_reg;
+	flush		= flush_reg;
 end
 
 // -------------------------     Control del ROB     ---------------------------------
 
 always @ (posedge clock or posedge reset) begin
 	if (reset) begin
-	increment <= 1;
+	increment	<= 1;
+	flush_reg	<= 0;
 	end else begin
 		if (RequestQueryRt) begin
 			`ifdef DEBUG_ROB $display("INFO : ROB : Request Query Rt "); `endif
@@ -182,7 +197,7 @@ always @ (posedge clock or posedge reset) begin
 						Retire_store_ready  	<= (Reg_File_Tmp_data_Rs[35:34]==2'b10)? 1: 0;
 						Retire_valid_reg  	<= 1; 
 						
-						// TODO : invalidate register at regfiletemp:
+						// TODO : invalidate register at regfiletemp 
 						
 						OrderQueueNew_write  	<= 0; // Order queue : write enable
 						increment <= 0;
@@ -194,8 +209,16 @@ always @ (posedge clock or posedge reset) begin
 				OrderQueueNew_read <= 0;
 			end
 		end
-
-		if (RequestUpdate) begin
+		
+		if (RequestFlush) begin
+			`ifdef DEBUG_ROB $display("INFO : ROB : Start ----- ------ ----- ----- >FLUSH "); `endif
+			flush_reg		<= 1;
+			RequestFlush_reg	<= 0;
+		end else begin
+			flush_reg		<= 0;
+			RequestFlush_reg	<= 0;
+		end 
+		if (RequestUpdate) begin 
 			`ifdef DEBUG_ROB $display("INFO : ROB : Update_entry %d %d", Cdb_rd_tag,Cdb_data); `endif
  			// solo se hace el update para Cdb_data,Cdb_valid
 			Wen_rst 		<= 0; // RST : write enable
@@ -236,7 +259,8 @@ rst rst (
   	.Waddr_rst	(Dispatch_Rd_reg), // TODO: checkar si se direcciona con el registro.
 	.Wen0_rst	(0),
 	.Wen_rst	(Wen_rst),
-	.Wen1_rst	(Wen1_rst) 
+	.Wen1_rst	(Wen1_rst),
+	.flush		(flush)
 	);
 
 order_queue order_queue (
@@ -248,7 +272,8 @@ order_queue order_queue (
 	.outData	(OrderQueue_data),
 	.full		(OrderQueueFull),
 	.empty		(OrderQueueEmpty),
-	.increment 	(increment)
+	.increment 	(increment),
+	.flush		(flush)
 	);
 
 regfiletmp regfiletmp (
@@ -261,7 +286,8 @@ regfiletmp regfiletmp (
 	.Data_out1	(Reg_File_Tmp_data_Rs),
 	.Rd_Addr1	(Rs_reg_logic),
 	.Data_out2	(Reg_File_Tmp_data_Rt),
-	.Rd_Addr2	(Rt_reg_logic)
+	.Rd_Addr2	(Rt_reg_logic),
+	.flush		(flush)
 );
 
 endmodule 

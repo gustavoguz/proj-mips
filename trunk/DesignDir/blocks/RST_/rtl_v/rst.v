@@ -25,8 +25,10 @@ module rst (
   	input  	[ 4:0] 	Waddr_rst,
 	input 		Wen_rst,
 	
-	input 		[31:0] 	Wen0_rst,
-	output  	[31:0] 	Wen1_rst 
+	input 	[31:0] 	Wen0_rst,
+	output  [31:0] 	Wen1_rst,
+	
+	input		flush	
 	);
 
 reg 	[ 5:0] 	RST_reg 	[31:0];
@@ -45,11 +47,10 @@ integer j;
 integer k;
 integer l;
 
-always@(posedge clock or posedge reset) begin
-	if(reset) begin
+always@(posedge clock or posedge reset or flush) begin
+	if(reset | flush ) begin
 		for (i=0; i < 32; i=i+1 ) begin
-      			RST_reg [i] <= 6'b0_00000; //se ponen todos los registros como no validos.
-//			Comparator[i] <= 0;
+      			RST_reg [i] <= 6'b0_00000; 
 		end
     	end else begin   
       		if(Wen_rst) begin
@@ -63,13 +64,15 @@ always@(posedge clock or posedge reset) begin
     	end
 end
 
-always @ (RST_reg or CDB_Token) begin
+//always @ (RST_reg or CDB_Token) begin
+always @* begin
 	for (j=0; j< 32;j=j+1) begin
 	 	Comparator [j] = (RST_reg[j] == CDB_Token);
 	end
 end 
 
-always @ (Comparator or Wen0_rst_dec) begin
+//always @ (Comparator or Wen0_rst_dec) begin
+always @* begin
 	for (k=0; k< 32;k=k+1) begin
 	 	Wen1_rst_cod [k] = Comparator[k] & (~Wen0_rst_dec[k]);
 	end
