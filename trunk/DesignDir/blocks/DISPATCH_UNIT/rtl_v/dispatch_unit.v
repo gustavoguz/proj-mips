@@ -20,19 +20,19 @@ module dispatch_unit (
 	input			clock,			// Senal de reloj.
 	input 			reset,			// Señal de reset.
 	// Interface con IFQ:
-	input	[ 32:  0]	ifetch_pc_4,		// la instrucción es valida is ‘0’, invalida si ‘1’.
-	input	[ 32:  0]	ifetch_intruction, 	// 32 bits de la instrucción.
+	input	[ 31:  0]	ifetch_pc_4,		// la instrucción es valida is ‘0’, invalida si ‘1’.
+	input	[ 31:  0]	ifetch_intruction, 	// 32 bits de la instrucción.
 	input			ifetch_empty,		// la instrucción es valida is ‘0’, invalida si ‘1’.
-	output  [ 32:  0]	Dispatch_jmp_addr,	// 32 bit dirección de salto.
+	output  [ 31:  0]	Dispatch_jmp_addr,	// 32 bit dirección de salto.
 	output reg		Dispatch_jmp,		// ‘1’ la instrucción es un jump o un branch que fue tomado.
 	output reg		Dispatch_ren,		// si ‘1’ el IFQ incrementa el apuntador de lectura y muestra una nueva instruccion,
 							// si ‘0’ el IFQ sigue mostrando la misma instrucción.
 	// Interface con Colas de ejecucion:
 	// - Señales comunes para todas las colas de ejecución.
-	output reg [ 32:  0]	dispatch_rs_data,	// operando rs
+	output reg [ 31:  0]	dispatch_rs_data,	// operando rs
 	output reg		dispatch_rs_data_valid,	// es „1‟ si rs tiene el ultimo valor, si no „0‟.
 	output reg [  4:  0]	dispatch_rs_tag,	// tag para rs.
-	output reg [ 32:  0]	dispatch_rt_data,	// operand rt
+	output reg [ 31:  0]	dispatch_rt_data,	// operand rt
 	output reg 		dispatch_rt_data_valid,	// es „1‟ si rt tiene el ultmo valor, si no „0‟.
 	output reg [  4:  0]	dispatch_rt_tag,	// tag para rt
 	output  [  4:  0]	dispatch_rd_tag,	// TAG asignado al registro destino de la instrucción
@@ -54,12 +54,12 @@ module dispatch_unit (
 	input			issueque_mul_full	// Bandera “llena” de la cola de ejecución Multiplicación.
 
 	);
-reg	[  4:  0]	dispatch_shfamt_reg;
-reg	[  3:  0]	dispatch_opcode_reg;
-reg			dispatch_en_integer_reg;
-reg			dispatch_en_ld_st_reg;
-reg 	[ 15:  0]	dispatch_imm_ld_st_reg;
-reg 			dispatch_en_mul_reg;
+wire	[  4:  0]	dispatch_shfamt_reg;
+wire	[  3:  0]	dispatch_opcode_reg;
+wire			dispatch_en_integer_reg;
+wire			dispatch_en_ld_st_reg;
+wire 	[ 15:  0]	dispatch_imm_ld_st_reg;
+wire 			dispatch_en_mul_reg;
 
 
 reg 	[31: 0]		Data_In;
@@ -75,9 +75,9 @@ reg 			Rs_reg_ren;
 reg 			Rt_reg_ren;
 reg 	[15: 0]		inmediato;
 
-wire 	[ 3: 0]		Dispatch_opcode;
-wire	[ 4: 0]		Dispatch_shfamt;
-wire	[31: 0]		Dispatch_Imm_LS;
+//wire 	[ 3: 0]		Dispatch_opcode;
+//wire	[ 4: 0]		Dispatch_shfamt;
+//wire	[31: 0]		Dispatch_Imm_LS;
 
 
 wire 			Dispatch_Type_R;
@@ -95,8 +95,8 @@ reg 			Rd_en_reg;
 wire 	[ 4: 0]		Tag_Out;
 wire 			Rs_Data_valid;
 wire			Rt_Data_valid;
-wire    [32: 0]		Rs_Data_spec;
-wire	[32 :0]		Rt_Data_spec;
+wire    [31: 0]		Rs_Data_spec;
+wire	[31 :0]		Rt_Data_spec;
 wire    [ 5: 0]		Rs_token;
 wire    [ 5: 0]		Rt_token;
 
@@ -188,10 +188,10 @@ regfile regfile(
 	.Rd_Addr2		(Rt_addr)
 	);
 
-Dispatch_Decoder decoder (
+Dispatch_Decoder Dispatch_Decoder (
 	.Inst			(ifetch_intruction),
-	.Dispatch_opcode	(dispatch_opcode_reg),
-	.Dispatch_shfamt	(dispatch_shfamt_reg),
+	.Dispatch_Opcode	(dispatch_opcode_reg),
+	.Dispatch_Shfamt	(dispatch_shfamt_reg),
 	.Dispatch_Imm_LS	(dispatch_imm_ld_st_reg), // cuantos bit deberian deser ?
 	.Dispatch_en_Int	(dispatch_en_integer_reg),
 	.Dispatch_en_LS		(dispatch_en_ld_st_reg),
