@@ -27,7 +27,18 @@ begin
 	if (reset) 
 	begin
 		for(i=0;i< 32;i=i+1)
-		begin
+		begin 
+		if (i==0)
+		RegFile[i] <= 0; 
+		else if (i==1)
+		RegFile[i] <= 1; 
+		else if (i==2)
+		RegFile[i] <= 2; 
+		else if (i==3)
+		RegFile[i] <= 3; 
+		else if (i==4)
+		RegFile[i] <= 4; 
+		else
 		RegFile[i] <= 0; 
 		end	
 	end else 

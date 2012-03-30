@@ -24,7 +24,7 @@ module dispatch_unit (
 	input	[ 31:  0]	ifetch_intruction, 	// 32 bits de la instrucción.
 	input			ifetch_empty,		// la instrucción es valida is ‘0’, invalida si ‘1’.
 	output  [ 31:  0]	Dispatch_jmp_addr,	// 32 bit dirección de salto.
-	output reg		Dispatch_jmp,		// ‘1’ la instrucción es un jump o un branch que fue tomado.
+	output 			Dispatch_jmp,		// ‘1’ la instrucción es un jump o un branch que fue tomado.
 	output reg		Dispatch_ren,		// si ‘1’ el IFQ incrementa el apuntador de lectura y muestra una nueva instruccion,
 							// si ‘0’ el IFQ sigue mostrando la misma instrucción.
 	// Interface con Colas de ejecucion:
@@ -54,13 +54,15 @@ module dispatch_unit (
 	input			issueque_mul_full	// Bandera “llena” de la cola de ejecución Multiplicación.
 
 	);
+
 wire	[  4:  0]	dispatch_shfamt_reg;
 wire	[  3:  0]	dispatch_opcode_reg;
 wire			dispatch_en_integer_reg;
 wire			dispatch_en_ld_st_reg;
 wire 	[ 15:  0]	dispatch_imm_ld_st_reg;
 wire 			dispatch_en_mul_reg;
-
+reg  	[  1:0  ]	Dispatch_inst_type;
+reg 			new_rd_tag_valid;
 
 reg 	[31: 0]		Data_In;
 reg 	[ 4: 0]		Waddr;
@@ -74,11 +76,6 @@ reg 	[25: 0]		address;
 reg 			Rs_reg_ren;
 reg 			Rt_reg_ren;
 reg 	[15: 0]		inmediato;
-
-//wire 	[ 3: 0]		Dispatch_opcode;
-//wire	[ 4: 0]		Dispatch_shfamt;
-//wire	[31: 0]		Dispatch_Imm_LS;
-
 
 wire 			Dispatch_Type_R;
 wire 			Dispatch_Type_I;
@@ -100,26 +97,65 @@ wire	[31 :0]		Rt_Data_spec;
 wire    [ 5: 0]		Rs_token;
 wire    [ 5: 0]		Rt_token;
 
-assign Rd_en	= Rd_en_reg;
-assign dispatch_rd_tag	= Tag_Out; 
-assign Dispatch_jmp_addr = Jmp_branch_address_addr_logic ; // TODO: revisar cunado sea un branch o jmp
+wire	[  4:  0]	Retire_rd_tag;
+wire	[  4:  0]	Retire_rd_reg;
+wire	[ 31:  0]	Retire_data;
+wire	[ 31:  0]	Retire_pc;
+wire			Retire_branch;
+wire			Retire_branch_taken;
+wire			Retire_store_ready;
+wire			Retire_valid;
+wire [ 31:0]		Jmp_branch_address;
+
+assign Rd_en			= Rd_en_reg;
+assign dispatch_rd_tag		= Tag_Out; 
+assign Dispatch_jmp_addr 	= Jmp_branch_address;
+assign Dispatch_jmp 		= (Dispatch_Type_J || Retire_branch_taken);
+
+reg clock_reg1;
+reg clock_reg2;
+reg [4:0]	Dispatch_Rd_tag;
+reg [4:0]	Dispatch_Rd_reg;
+reg [31:0]	Dispatch_pc;
+
+reg 	[  4:  0]	Cdb_rd_tag;
+reg			Cdb_valid;
+reg	[ 31:  0]	Cdb_data;
+reg 			Cdb_branch;
+reg			Cdb_branch_taken;
+//TODO:
+always @(posedge clock or posedge reset) begin
+Cdb_branch_taken <=0;
+Cdb_branch <=0;
+Cdb_valid <=0;
+Cdb_rd_tag <=0;
+Cdb_data <=0;
+end
 
 always @(posedge clock or posedge reset) begin
+	if (reset) begin
+		clock_reg1 <=0;
+		clock_reg2 <=1;
+	end else begin
+		clock_reg1 <=!clock_reg1;
+		clock_reg2 <=!clock_reg2;
+	end 
+end
+
+always @(posedge clock_reg1 or posedge reset) begin
 	if (reset) begin
 	end else begin
 	// Lectura de los registros Rs y Rt:
 	// -- Del banco de registros.
 	Rs_addr		<= ifetch_intruction [25:21]; // Rs
 	Rt_addr		<= ifetch_intruction [20:16]; // Rt
-	Rs_reg_ren	<= 1;
 	Rt_reg_ren	<= 1;
-	inmediato	<= ifetch_intruction [15:0]; //TODO: Valor inediato para instrucciones de tipo I se debe hacer extencion de signo
-	address		<= ifetch_intruction [25:0]; //26 bits de dirrecion.
-	// TODO : Agregar un nuevo dato al rob	
+	Rs_reg_ren	<= 1;
+
 	// señales para todas las colas de ejecusion:
 	if (Rs_Data_valid) begin
 		dispatch_rs_data 	<= Rs_Data_spec;
-		dispatch_rs_data_valid	<= Rs_Data_valid;
+		dispatch_rs_data_valid 	<= Rs_Data_valid;
 		dispatch_rs_tag		<= Rs_token[5:1]; //TODO: validar este dato, puede ser que  no exista el tag
 	end else begin
 		dispatch_rs_data 	<= RegFile_Rs_reg;
@@ -136,7 +172,25 @@ always @(posedge clock or posedge reset) begin
 		dispatch_rt_data_valid	<= Rt_Data_valid;
 		dispatch_rt_tag		<= Rt_token[5:1]; //TODO: validar este dato, puede ser que  no exista el tag
 	end
+	/// Agregar un nuevo dato al rob	
+	if (Dispatch_Type_R) begin
+		Dispatch_Rd_tag 	<= Tag_Out;
+		Dispatch_Rd_reg		<= ifetch_intruction[15:11];
+		Dispatch_pc		<= ifetch_pc_4;
+		Dispatch_inst_type 	<= 2'b11; /// TODO: ??
+		new_rd_tag_valid	<= 1;
+		Rd_en_reg		<= 1;
+	end else begin
+		Rd_en_reg		<= 0;
+	end
+	end
+end
 
+always @(posedge clock_reg2 or posedge reset) begin
+	if (reset) begin
+	end else begin
+	// señales para todas las colas de ejecusion:
+	
 	if (Dispatch_Type_R) begin
 		Rd_en_reg	<= 1;
 	end else begin
@@ -201,9 +255,6 @@ Dispatch_Decoder Dispatch_Decoder (
 	.Dispatch_Type_J	(Dispatch_Type_J)
 	);
 
-
-
-
 tagfifo tagfifo(
 	.clock			(clock),
 	.reset			(!reset),
@@ -214,7 +265,7 @@ tagfifo tagfifo(
 	.RB_Tag_Valid		(RB_Tag_Valid),
 	.Rd_en			(Rd_en)
 	);
-
+/*
 AddressLogic AddressLogic(
 	.is_jump		(Dispatch_Type_J),
 	.normal_addr		(normal_addr), /// TODO: que significa esta señal? de donde proviene?
@@ -223,13 +274,13 @@ AddressLogic AddressLogic(
 	.address		(address),
 	.Jmp_branch_address	(Jmp_branch_address_addr_logic)
 	);
-
+*/
 branchlogic  branchlogic (
 	.is_jump		(Dispatch_Type_J),
 	.pc_plus4		(ifetch_pc_4),
-	.immediate		(immediate),
-	.address		(address),
-	.Jmp_branch_address	(Jmp_branch_address_br_logic)
+	.immediate		(ifetch_intruction [15:0]),
+	.address		(ifetch_intruction [25:0]),
+	.Jmp_branch_address	(Jmp_branch_address)
 	);
 
 rob rob (

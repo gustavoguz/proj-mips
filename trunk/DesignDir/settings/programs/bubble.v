@@ -8,7 +8,7 @@
 //  The next 5 data will be sorted by Selection sort.
 
 mem [ 0] = 32'h00000020 ; //add $0, $0, $0     //nop *** INITIALIZATION FOR BUBBLE SORT ***
-mem [ 1] = 33'h0080F820 ; //add $31, $4, $0    //$31 = 4 
+mem [ 1] = 32'h0080F820 ; //add $31, $4, $0    //$31 = 4 
 mem [ 2] = 32'h00BF1019 ; //mul $2, $5, $31    //ak = 4 * num_of_items
 mem [ 3] = 32'h00000020 ; //add $0, $0, $0     //noop
 //

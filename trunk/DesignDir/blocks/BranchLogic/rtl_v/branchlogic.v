@@ -12,11 +12,11 @@
 
 // Branch Logic without register for branch address
 module  branchlogic (
-			input 		        is_jump,
+			input 	          is_jump,
 			input	 [31:0]	  pc_plus4,  
 			input	 [15:0]	  immediate,
-			input  [25:0]   address,
-			output	[31:0]   Jmp_branch_address
+			input    [25:0]   address,
+			output	 [31:0]   Jmp_branch_address
 			);
 			
 // is_jump = 1 : Jump Address, 0 : Branch Address

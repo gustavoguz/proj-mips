@@ -45,7 +45,6 @@ ifq ifq (
 );
 
 
-
 always 
 	#5 clk= !clk;
 
