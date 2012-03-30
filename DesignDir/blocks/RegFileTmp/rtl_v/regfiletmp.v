@@ -34,8 +34,8 @@ begin
 		for(i=0;i< 32;i=i+1)
 		begin
 		RegFile[i] <= 0; 
-		`ifdef DEBUG_RegFileTmp $display ("INFO : RegFileTmp : REGFILETEMP = %p",RegFile); `endif
 		end	
+		`ifdef DEBUG_RegFileTmp $display ("INFO : RegFileTmp : REGFILETEMP = %p",RegFile); `endif
 	end else 
 	begin
 		if (New_entry)

@@ -156,25 +156,49 @@ always @ (posedge clock or posedge reset) begin
 	if (reset) begin
 	increment	<= 1;
 	flush_reg	<= 0;
+	Retire_rd_tag 		<= 0;
+	Retire_rd_reg 		<= 0;
+	Retire_data		<= 0;
+	Retire_pc		<= 0;
+	Retire_rd_tag_reg 	<= 0;
+	Retire_branch		<= 0;
+	Retire_valid 		<= 1'b0;
+	Retire_branch_taken 	<= 0;
+	Retire_store_ready  	<= 0;
+	Retire_valid_reg  	<= 1; 
 	end else begin
 		if (RequestQueryRt) begin
-			`ifdef DEBUG_ROB $display("INFO : ROB : Request Query Rt "); `endif
 			Rt_reg_reg		<= Rt_reg;
 			Rt_token 		<= { Token_tag_rt , Token_valid_rt };
 			Rt_Data_spec  		<= Reg_File_Tmp_data_Rt [33:2];
 			Rt_Data_valid		<= Reg_File_Tmp_data_Rt [1];
 			RequestQueryRt_reg	<= 0;
 			OrderQueueNew_write  	<= 0; // Order queue : write enable
+			`ifdef DEBUG_ROB $display("INFO : ROB : Request Query Rt = %d",Rt_reg); `endif
+			`ifdef DEBUG_ROB_TB $display ("------------------------------------------"); `endif
+			`ifdef DEBUG_ROB_TB $display ("Rt_token 	 %d",{ Token_tag_rt , Token_valid_rt } ); `endif
+			`ifdef DEBUG_ROB_TB $display ("Rt_token_tag 	 %d",Token_tag_rt); `endif
+			`ifdef DEBUG_ROB_TB $display ("Rt_token_valid 	 %d",Token_valid_rt); `endif
+			`ifdef DEBUG_ROB_TB $display ("Rt_Data_spec  %d",Reg_File_Tmp_data_Rt [33:2]); `endif
+			`ifdef DEBUG_ROB_TB $display ("Rt_Data_valid %d",Reg_File_Tmp_data_Rt[1]); `endif
+			`ifdef DEBUG_ROB_TB $display ("------------------------------------------"); `endif
 		end
 		
 		if (RequestQueryRs) begin
-			`ifdef DEBUG_ROB $display("INFO : ROB : Request Query Rs "); `endif
 			Rs_reg_reg		<= Rs_reg;
 			Rs_token 		<= { Token_tag_rs , Token_valid_rs };
 			Rs_Data_spec  		<= Reg_File_Tmp_data_Rs [33:2];
 			Rs_Data_valid 		<= Reg_File_Tmp_data_Rs [1];
 			RequestQueryRs_reg	<= 0;
 			OrderQueueNew_write  	<= 0; // Order queue : write enable
+			`ifdef DEBUG_ROB $display("INFO : ROB : Request Query Rs = %d",Rs_reg); `endif
+			`ifdef DEBUG_ROB_TB $display ("------------------------------------------"); `endif
+			`ifdef DEBUG_ROB_TB $display ("Rs_token 	 %d",{Token_tag_rs, Token_valid_rs}); `endif
+			`ifdef DEBUG_ROB_TB $display ("Rs_token_tag 	 %d",Token_tag_rs); `endif
+			`ifdef DEBUG_ROB_TB $display ("Rs_token_valid 	 %d",Token_valid_rs); `endif
+			`ifdef DEBUG_ROB_TB $display ("Rs_Data_spec  %d",Reg_File_Tmp_data_Rs [33:2]); `endif
+			`ifdef DEBUG_ROB_TB $display ("Rs_Data_valid %d",Reg_File_Tmp_data_Rs [1]); `endif
+			`ifdef DEBUG_ROB_TB $display ("------------------------------------------"); `endif
 		end 
 
 		if (!RequestQueryRs && !RequestQueryRt && !RequestAddNew) begin

@@ -28,8 +28,7 @@ module AddressLogic(
 // is_jump = 1 : Normal PC+4 Address or Jump Address, 0 : Branch Address
 
                                           //should be pc_plus4 or pc?
-assign Jmp_branch_address = (is_jump) ? (normal_addr) ? (pc_plus4) : ( { pc_plus4[31:28], address, 2'b00 } )  : ( pc_plus4 + ( { {14{immediate[15]}}, immediate, 2'b00 } ) );
-
+assign Jmp_branch_address = (is_jump) ? ( { pc_plus4[31:28], address, 2'b00 } ) : (normal_addr) ? (pc_plus4) : ( pc_plus4 + ( { {14{immediate[15]}}, immediate, 2'b00 } ) ) ;
 endmodule
 
 // Address Logic with register for branch address
