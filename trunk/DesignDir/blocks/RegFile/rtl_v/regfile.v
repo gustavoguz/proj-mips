@@ -38,6 +38,10 @@ begin
 		RegFile[i] <= 3; 
 		else if (i==4)
 		RegFile[i] <= 4; 
+		else if (i==5)
+		RegFile[i] <= 5; 
+		else if (i==31)
+		RegFile[i] <= 31; 
 		else
 		RegFile[i] <= 0; 
 		end	

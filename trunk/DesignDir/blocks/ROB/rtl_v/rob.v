@@ -264,7 +264,9 @@ always @ (posedge clock or posedge reset) begin
 			AddrRFT			<= Dispatch_Rd_tag;	
 			NewEntryData  		<= {Dispatch_Rd_reg,Dispatch_pc,Dispatch_inst_type,32'b0,1'b0,1'b1}; // nuevo valor para le regsiter file temp 
 			OrderQueueDataIn	<= Dispatch_Rd_tag; // nuevo valor para la rder queue;
-		end
+		end else begin
+		//	increment <= 1;
+		end 
 	end
 end
 

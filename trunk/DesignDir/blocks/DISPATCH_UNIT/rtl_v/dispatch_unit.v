@@ -35,7 +35,7 @@ module dispatch_unit (
 	output reg [ 31:  0]	dispatch_rt_data,	// operand rt
 	output reg 		dispatch_rt_data_valid,	// es „1‟ si rt tiene el ultmo valor, si no „0‟.
 	output reg [  4:  0]	dispatch_rt_tag,	// tag para rt
-	output  [  4:  0]	dispatch_rd_tag,	// TAG asignado al registro destino de la instrucción
+	output reg [  4:  0]	dispatch_rd_tag,	// TAG asignado al registro destino de la instrucción
 	
 	// - Señales especificas para la cola de ejecución de enteros.
 	output reg 		dispatch_en_integer,	// unidad de despacho intenta escribir una instrucción en la cola de ejecución de enteros.
@@ -51,19 +51,17 @@ module dispatch_unit (
 
 	// - Señales especificas para la Cola de ejecución de multiplicaciones.
 	output reg		dispatch_en_mul,	// DU intenta escribir una instrucción en la cola Multiplicación.
-	input			issueque_mul_full	// Bandera “llena” de la cola de ejecución Multiplicación.
+	input			issueque_mul_full,	// Bandera “llena” de la cola de ejecución Multiplicación.
+	
+	input 	[  4:  0]	Cdb_rd_tag,
+	input			Cdb_valid,
+	input	[ 31:  0]	Cdb_data,
+	input 			Cdb_branch,
+	input			Cdb_branch_taken
 
 	);
 
-wire	[  4:  0]	dispatch_shfamt_reg;
-wire	[  3:  0]	dispatch_opcode_reg;
-wire			dispatch_en_integer_reg;
-wire			dispatch_en_ld_st_reg;
-wire 	[ 15:  0]	dispatch_imm_ld_st_reg;
-wire 			dispatch_en_mul_reg;
-reg  	[  1:0  ]	Dispatch_inst_type;
-reg 			new_rd_tag_valid;
-
+// REGISTER FILE :
 reg 	[31: 0]		Data_In;
 reg 	[ 4: 0]		Waddr;
 reg			W_en;
@@ -72,31 +70,52 @@ wire	[31: 0]		RegFile_Rs_reg;
 reg	[ 4: 0]		Rs_addr;
 wire	[31: 0]		RegFile_Rt_reg;
 reg	[ 4: 0]		Rt_addr;
-reg 	[25: 0]		address;
-reg 			Rs_reg_ren;
-reg 			Rt_reg_ren;
-reg 	[15: 0]		inmediato;
 
+// DECODER :
+wire	[  3:  0]	dispatch_opcode_reg;
+wire	[  4:  0]	dispatch_shfamt_reg;
+wire 	[ 31:  0]	dispatch_imm_ld_st_reg;
+wire			dispatch_en_ld_st_reg;
+wire			dispatch_en_integer_reg;
+wire 			dispatch_en_mul_reg;
 wire 			Dispatch_Type_R;
 wire 			Dispatch_Type_I;
 wire 			Dispatch_Type_J;
-reg 			Dispatch_Type_R_reg;
-reg 			Dispatch_Type_I_reg;
-reg 			Dispatch_Type_J_reg;
+wire 			Dispatch_Branch;
 
-wire	[31:0]		Jmp_branch_address_br_logic;
-wire	[31:0]		Jmp_branch_address_addr_logic;
-	
-reg 			Rd_en_reg;
+reg	[  3:  0]	opcode_reg;
+reg	[  4:  0]	shfamt_reg;
+reg 	[ 31:  0]	imm_ld_st_reg;
+reg			en_ld_st_reg;
+reg			en_integer_reg;
+reg 			en_mul_reg;
 
-wire 	[ 4: 0]		Tag_Out;
+//  ROB :
+
+reg 			new_rd_tag;
+reg			new_rd_tag_valid;
+reg 	[  4:  0]	Rs_reg;
+reg 			Rs_reg_ren;
+wire 	[  5:  0]	Rs_token;
+wire 	[ 31:  0]	Rs_Data_spec;
 wire 			Rs_Data_valid;
+reg  	[  4:  0]	Rt_reg;
+reg  			Rt_reg_ren;
+wire	[  5:  0]	Rt_token;
+wire	[ 31:  0]	Rt_Data_spec;
 wire			Rt_Data_valid;
-wire    [31: 0]		Rs_Data_spec;
-wire	[31 :0]		Rt_Data_spec;
-wire    [ 5: 0]		Rs_token;
-wire    [ 5: 0]		Rt_token;
 
+reg	[  4:  0]	Dispatch_Rd_tag;
+reg	[  4:  0]	Dispatch_Rd_reg;
+reg 	[ 31:  0]	Dispatch_pc;
+reg	[  1:  0]	Dispatch_inst_type;
+/*
+reg 	[  4:  0]	Cdb_rd_tag;
+reg			Cdb_valid;
+reg	[ 31:  0]	Cdb_data;
+reg 			Cdb_branch;
+reg			Cdb_branch_taken;
+*/
 wire	[  4:  0]	Retire_rd_tag;
 wire	[  4:  0]	Retire_rd_reg;
 wire	[ 31:  0]	Retire_data;
@@ -105,130 +124,195 @@ wire			Retire_branch;
 wire			Retire_branch_taken;
 wire			Retire_store_ready;
 wire			Retire_valid;
-wire [ 31:0]		Jmp_branch_address;
 
-assign Rd_en			= Rd_en_reg;
-assign dispatch_rd_tag		= Tag_Out; 
-assign Dispatch_jmp_addr 	= Jmp_branch_address;
-assign Dispatch_jmp 		= (Dispatch_Type_J || Retire_branch_taken);
+reg	[31:0]		rs_data;
+reg			rs_data_valid;
+reg	[4:0]		rs_tag;
+reg	[31:0]		rt_data;
+reg			rt_data_valid;
+reg	[4:0]		rt_tag;
+reg	[4:0]		rd_tag;
+reg	[31:0]		rs_data_reg;
+reg			rs_data_valid_reg;
+reg	[4:0]		rs_tag_reg;
+reg	[31:0]		rt_data_reg;
+reg			rt_data_valid_reg;
+reg	[4:0]		rt_tag_reg;
+reg	[4:0]		rd_tag_reg;
 
-reg clock_reg1;
-reg clock_reg2;
-reg [4:0]	Dispatch_Rd_tag;
-reg [4:0]	Dispatch_Rd_reg;
-reg [31:0]	Dispatch_pc;
+// TAG FIFO :
 
-reg 	[  4:  0]	Cdb_rd_tag;
-reg			Cdb_valid;
-reg	[ 31:  0]	Cdb_data;
-reg 			Cdb_branch;
-reg			Cdb_branch_taken;
-//TODO:
+reg	[4:0]  		RB_Tag;
+reg 			RB_Tag_Valid;
+reg 			Rd_en;
+reg			increment;
+wire 	[4:0] 		Tag_Out;
+wire 			tagFifo_full;
+wire 			tagFifo_empty;
+
+// BRANCH LOGIC :
+//reg	 	        is_jump;
+//reg	[31:0]		pc_plus4;  
+//reg	[15:0]	 	immediate;
+//reg	[25:0]		address;
+wire	[31:0]		Jmp_branch_address;
+
+reg	[31:0] 		fetch_intruction_reg;
+reg new_instruction;
+
+// Nueva instruccion al rob 
 always @(posedge clock or posedge reset) begin
-Cdb_branch_taken <=0;
-Cdb_branch <=0;
-Cdb_valid <=0;
-Cdb_rd_tag <=0;
-Cdb_data <=0;
+	if (reset) begin
+	end else if (new_instruction) begin
+		Dispatch_Rd_tag		<= rd_tag_reg;
+		Dispatch_Rd_reg		<= ifetch_intruction[15:11];
+		Dispatch_pc		<= ifetch_pc_4;// TODO : checkar que pc guardar
+		Dispatch_inst_type	<= 2'b11; // TODO: esta señal deberai salir del decoder.
+		new_rd_tag_valid	<= 1;
+		new_rd_tag		<= 1;
+	end else begin
+		new_rd_tag_valid	<= 0;
+		new_rd_tag		<= 0;
+	end
 end
+// retirar 
+always @(posedge clock or posedge reset) begin
+	if (reset) begin
+	end  else if (Retire_valid) begin 
+	RB_Tag_Valid		<= 1;
+	Rd_en			<= 1;
+	W_en			<= 1;
+	RB_Tag 			<= Retire_rd_tag;
+	Waddr			<= Retire_rd_reg;
+	Data_In 		<= Retire_data;
+	/*
+	Retire_pc;
+	Retire_branch;
+	Retire_branch_taken;
+	Retire_store_ready;
+	*/
+	end else begin
+	Waddr			<= 0;
+	Data_In 		<= 0;
+	Rd_en			<= 0;
+	W_en			<= 0;
+	end
+end 
 
 always @(posedge clock or posedge reset) begin
 	if (reset) begin
-		clock_reg1 <=0;
-		clock_reg2 <=1;
+		fetch_intruction_reg <= 0;
 	end else begin
-		clock_reg1 <=!clock_reg1;
-		clock_reg2 <=!clock_reg2;
+		fetch_intruction_reg <= ifetch_intruction;
+		if (fetch_intruction_reg != ifetch_intruction) begin
+			new_instruction <= 1;
+		end else 
+			new_instruction <= 0;
+	end
+end
+
+always @* begin
+ 	Rs_reg_ren 	= new_instruction;
+ 	Rt_reg_ren 	= new_instruction;
+end
+
+always @(ifetch_intruction) begin
+	// Read Rs and Rt 
+	$display ("INFO : DISPATCHER : Reading Registers: Rs %d and Rt %d", ifetch_intruction [25:21],ifetch_intruction [20:16]);
+	Rs_addr 	= ifetch_intruction [25:21]; // Rs; 
+	Rt_addr 	= ifetch_intruction [20:16]; // Rt;
+	
+	if (Rs_Data_valid) begin
+	rs_data = Rs_Data_spec;
+	rs_tag  = Rs_token[5:1];
+	rs_data_valid = Rs_Data_valid;
+	end else begin
+	rs_data = RegFile_Rs_reg;
+	rs_tag  = 0;
+	rs_data_valid =1;
+	end
+	if (Rs_Data_valid) begin
+	rt_data = Rt_Data_spec;
+	rt_tag  = Rt_token[5:1];
+	rt_data_valid =Rt_Data_valid;
+	end else begin
+	rt_data = RegFile_Rt_reg;
+	rt_tag  = 0;
+	rt_data_valid =1;
+	end
+	rd_tag 	= Tag_Out;
+end
+
+always @ (posedge clock or posedge reset) begin
+	// - Señales comunes para todas las colas de ejecución.
+	if (reset) begin
+		Rd_en 		<= 0;
+		increment 	<= 0;
+	end else begin 
+		$display ("INFO : DISPATCHER : -------- Sending informations to queues------------");	
+		$display ("---> rs_data       %d",rs_data_reg);
+		$display ("---> rs_data_valid %d",rs_data_valid_reg);
+		$display ("---> rs_tag        %d",rs_tag_reg);
+		$display ("---> rt_data       %d",rt_data_reg);
+		$display ("---> rt_data_valid %d",rt_data_valid_reg);
+		$display ("---> rt_tag        %d",rt_tag_reg);
+		$display ("---> rd_tag        %d",rd_tag_reg);
+
+		if(Dispatch_Type_R && !issueque_integer_full && !issueque_full_ld_st && !issueque_mul_full)	
+		Rd_en 			<= new_instruction;
+		else 
+		Rd_en 			<= 0;
+
+		increment 		<= new_instruction; 
+
+		dispatch_rs_data 	<= rs_data_reg;
+		dispatch_rs_data_valid	<= rs_data_valid_reg;
+		dispatch_rs_tag		<= rs_tag_reg;
+
+		dispatch_rt_data	<= rt_data_reg;
+		dispatch_rt_data_valid	<= rt_data_valid_reg;
+		dispatch_rt_tag		<= rt_tag_reg;
+
+		dispatch_rd_tag		<= rd_tag_reg;
+		// - Señales especificas para la cola de ejecución de enteros.
+		if (!issueque_integer_full) begin
+			dispatch_en_integer	<= en_integer_reg;
+			dispatch_opcode		<= opcode_reg;
+			dispatch_shfamt		<= shfamt_reg;
+		end
+		// - Señales especificas para la Cola de ejecución de acceso a memoria.
+		if (!issueque_full_ld_st) begin
+			dispatch_en_ld_st	<= en_ld_st_reg;
+			dispatch_imm_ld_st	<= imm_ld_st_reg;
+		end
+			// - Señales especificas para la Cola de ejecución de multiplicaciones.
+		if (!issueque_mul_full) begin
+			dispatch_en_mul		<= en_mul_reg;
+		end
+
+		if (!issueque_integer_full && !issueque_full_ld_st && !issueque_mul_full)	
+			Dispatch_ren	<= 1;
+		else 
+			Dispatch_ren	<= 0;
+
 	end 
 end
 
-always @(posedge clock_reg1 or posedge reset) begin
-	if (reset) begin
-	end else begin
-	// Lectura de los registros Rs y Rt:
-	// -- Del banco de registros.
-	Rs_addr		<= ifetch_intruction [25:21]; // Rs
-	Rt_addr		<= ifetch_intruction [20:16]; // Rt
-	Rt_reg_ren	<= 1;
-	Rs_reg_ren	<= 1;
-
-	// señales para todas las colas de ejecusion:
-	if (Rs_Data_valid) begin
-		dispatch_rs_data 	<= Rs_Data_spec;
-		dispatch_rs_data_valid 	<= Rs_Data_valid;
-		dispatch_rs_tag		<= Rs_token[5:1]; //TODO: validar este dato, puede ser que  no exista el tag
-	end else begin
-		dispatch_rs_data 	<= RegFile_Rs_reg;
-		dispatch_rs_data_valid	<= Rs_Data_valid;
-		dispatch_rs_tag		<= Rs_token[5:1]; //TODO: validar este dato, puede ser que  no exita el tag
-	end
-	
-	if (Rt_Data_valid) begin
-		dispatch_rt_data 	<= Rt_Data_spec;
-		dispatch_rt_data_valid	<= Rt_Data_valid;
-		dispatch_rt_tag		<= Rt_token[5:1]; //TODO: validar este dato, puede ser que  no exista el tag
-	end else begin
-		dispatch_rt_data 	<= RegFile_Rt_reg;
-		dispatch_rt_data_valid	<= Rt_Data_valid;
-		dispatch_rt_tag		<= Rt_token[5:1]; //TODO: validar este dato, puede ser que  no exista el tag
-	end
-	/// Agregar un nuevo dato al rob	
-	if (Dispatch_Type_R) begin
-		Dispatch_Rd_tag 	<= Tag_Out;
-		Dispatch_Rd_reg		<= ifetch_intruction[15:11];
-		Dispatch_pc		<= ifetch_pc_4;
-		Dispatch_inst_type 	<= 2'b11; /// TODO: ??
-		new_rd_tag_valid	<= 1;
-		Rd_en_reg		<= 1;
-	end else begin
-		Rd_en_reg		<= 0;
-	end
-	end
+always @(posedge clock) begin
+	rs_data_reg		<= rs_data;
+	rs_data_valid_reg	<= rs_data_valid;
+	rs_tag_reg		<= rs_tag;
+	rt_data_reg		<= rt_data;
+	rt_data_valid_reg	<= rt_data_valid;
+	rt_tag_reg		<= rt_tag;
+	rd_tag_reg		<= rd_tag;
+	opcode_reg 		<= dispatch_opcode_reg;
+	shfamt_reg 		<= dispatch_shfamt_reg;
+	en_ld_st_reg 		<= dispatch_en_ld_st_reg;
+	imm_ld_st_reg 		<= dispatch_imm_ld_st_reg;
+	en_mul_reg		<= dispatch_en_mul_reg;
+	en_integer_reg		<= dispatch_en_integer_reg;	
 end
-
-always @(posedge clock_reg2 or posedge reset) begin
-	if (reset) begin
-	end else begin
-	// señales para todas las colas de ejecusion:
-	
-	if (Dispatch_Type_R) begin
-		Rd_en_reg	<= 1;
-	end else begin
-		Rd_en_reg	<= 0;
-	end
-
-	// Señales para cada cola:
-	if (!issueque_integer_full) 	begin 
-		dispatch_shfamt		<= dispatch_shfamt_reg;
-		dispatch_opcode		<= dispatch_opcode_reg;
-		dispatch_en_integer	<= dispatch_en_integer_reg;
-		Dispatch_ren		<= 1'b1;
-		// TODO : Actualizar el rob	
-	end else begin
-		Dispatch_ren		<= 1'b0;
-		// TODO: retener el los datos hasta que haya espacio en las colas
-	end
-	if (!issueque_full_ld_st) 	begin
-		dispatch_en_ld_st	<= dispatch_en_ld_st_reg;
-		dispatch_imm_ld_st	<= dispatch_imm_ld_st_reg;
-		Dispatch_ren		<= 1'b1;
-		// TODO : Actualizar el rob	
-	end else begin
-		Dispatch_ren		<= 1'b0;
-		// TODO: retener el los datos hasta que haya espacio en las colas
-	end
-	if (!issueque_mul_full) 	begin
-		dispatch_en_mul		<= dispatch_en_mul_reg;
-		Dispatch_ren		<= 1'b1;
-		// TODO : Actualizar el rob	
-	end else begin
-		Dispatch_ren		<= 1'b0;
-		// TODO: retener el los datos hasta que haya espacio en las colas
-	end
-
-	end
-end
-
 
 regfile regfile(
 	.clock			(clock),
@@ -246,13 +330,14 @@ Dispatch_Decoder Dispatch_Decoder (
 	.Inst			(ifetch_intruction),
 	.Dispatch_Opcode	(dispatch_opcode_reg),
 	.Dispatch_Shfamt	(dispatch_shfamt_reg),
-	.Dispatch_Imm_LS	(dispatch_imm_ld_st_reg), // cuantos bit deberian deser ?
+	.Dispatch_Imm_LS	(dispatch_imm_ld_st_reg), 
 	.Dispatch_en_Int	(dispatch_en_integer_reg),
 	.Dispatch_en_LS		(dispatch_en_ld_st_reg),
 	.Dispatch_en_Mult	(dispatch_en_mul_reg),	
 	.Dispatch_Type_R	(Dispatch_Type_R),
 	.Dispatch_Type_I	(Dispatch_Type_I),
-	.Dispatch_Type_J	(Dispatch_Type_J)
+	.Dispatch_Type_J	(Dispatch_Type_J),
+	.Dispatch_Branch	(Dispatch_Branch)
 	);
 
 tagfifo tagfifo(
@@ -263,18 +348,10 @@ tagfifo tagfifo(
 	.tagFifo_empty		(tagFifo_empty),
 	.RB_Tag			(RB_Tag),
 	.RB_Tag_Valid		(RB_Tag_Valid),
-	.Rd_en			(Rd_en)
+	.Rd_en			(Rd_en),
+	.increment		(increment)
 	);
-/*
-AddressLogic AddressLogic(
-	.is_jump		(Dispatch_Type_J),
-	.normal_addr		(normal_addr), /// TODO: que significa esta señal? de donde proviene?
-	.pc_plus4		(ifetch_pc_4),  
-	.immediate		(immediate),
-	.address		(address),
-	.Jmp_branch_address	(Jmp_branch_address_addr_logic)
-	);
-*/
+
 branchlogic  branchlogic (
 	.is_jump		(Dispatch_Type_J),
 	.pc_plus4		(ifetch_pc_4),

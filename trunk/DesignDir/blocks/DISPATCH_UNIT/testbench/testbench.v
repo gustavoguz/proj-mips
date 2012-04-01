@@ -7,8 +7,8 @@ module testbench;
 
 	reg 			clock;
 	reg 			reset;
-	reg  [  31: 0]			ifetch_pc_4;
-	reg  [  31: 0]			ifetch_intruction;
+	reg  [  31: 0]		ifetch_pc_4;
+	reg  [  31: 0]		ifetch_intruction;
 	reg			ifetch_empty;
 	wire [ 31:  0]		Dispatch_jmp_addr;
 	wire			Dispatch_jmp;
@@ -71,13 +71,38 @@ initial begin
 //mem [ 1] = 32'h0080F820 ; //add $31, $4, $0    //$31 = 4 
 //mem [ 2] = 32'h00BF1019 ; //mul $2, $5, $31    //ak = 4 * num_of_items
 //mem [ 3] = 32'h00000020 ; //add $0, $0, $0     //noop
+$display ("INFO : DISPATCHER_TB : START ");
 ifetch_pc_4=0;
 ifetch_intruction=32'h0080F820;
 ifetch_empty=0;
 issueque_integer_full=0;
 issueque_full_ld_st=0;
 issueque_mul_full=0;
+//------------------------------------
+#40
+$display ("INFO : DISPATCHER_TB : START ");
+ifetch_pc_4=0;
+ifetch_pc_4=4;
+ifetch_intruction=32'h00BF1018;
+ifetch_empty=0;
+issueque_integer_full=0;
+issueque_full_ld_st=0;
+issueque_mul_full=0;
+//------------------------------------
+#40
+$display ("INFO : DISPATCHER_TB : START ");
+ifetch_pc_4=0;
+ifetch_pc_4=0;
+ifetch_intruction=32'h00000020;
+ifetch_empty=0;
+issueque_integer_full=0;
+issueque_full_ld_st=0;
+issueque_mul_full=0;
+//------------------------------------
 
+
+#20 ifetch_empty=1;
+$display ("INFO : DISPATCHER_TB : END ");
 #20 $finish;
 end
 

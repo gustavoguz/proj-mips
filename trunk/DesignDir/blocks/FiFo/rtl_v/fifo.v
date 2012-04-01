@@ -46,7 +46,7 @@ always @(posedge wclk or negedge wrst_n) begin
        if (!wrst_n || flush) begin
 		`ifdef DEBUG_OrderQueue $display("INFO : FIFO : Flush/Reset write ptr"); `endif
 		wptr = 0;
-	end else if (winc && !wfull) begin
+	end else if (winc && !wfull ) begin
                 ex_mem[wptr[DSIZE-1:0]] = wdata;
                 wptr = wptr+1;
 		`ifdef DEBUG_OrderQueue $display("INFO : FIFO : write -> %b, %p",wptr,ex_mem); `endif
