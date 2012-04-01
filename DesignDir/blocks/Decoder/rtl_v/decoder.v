@@ -23,17 +23,17 @@
 //--------------------------------------------------------------------------------------------------------------------------
 
 module Dispatch_Decoder (
-	input  		   [31:0] Inst,
+	input  		[31:0] 	Inst,
 	output reg 	[ 3:0]	Dispatch_Opcode,	//: 3?bit opcode para la ALU. : 1 ? bit opcode para distinguir entre LD y ST.
-	output reg	 [ 4:0]	Dispatch_Shfamt,	//:: 5-bits en caso de una instrucción del tipo shift  Necesario?
+	output reg	[ 4:0]	Dispatch_Shfamt,	//:: 5-bits en caso de una instrucción del tipo shift  Necesario?
 	output reg 	[31:0]	Dispatch_Imm_LS,	//: 32  bit del campo inmediato para calcular la dirección de memoria, 32 por las extensiones
-	output reg 		      Dispatch_en_Int,	//: unidad de despacho intenta escribir una instrucción en la cola de ejecución de enteros.
-	output reg 		      Dispatch_en_LS,	//: DU intenta escribir una instrucción en la cola LD/ST.
-	output reg 		      Dispatch_en_Mult,
-	output reg         Dispatch_Type_R,
-	output reg         Dispatch_Type_I,
-	output reg         Dispatch_Type_J,
-	output reg         Dispatch_Branch
+	output reg 		Dispatch_en_Int,	//: unidad de despacho intenta escribir una instrucción en la cola de ejecución de enteros.
+	output reg 		Dispatch_en_LS,	//: DU intenta escribir una instrucción en la cola LD/ST.
+	output reg 		Dispatch_en_Mult,
+	output reg         	Dispatch_Type_R,
+	output reg         	Dispatch_Type_I,
+	output reg         	Dispatch_Type_J,
+	output reg         	Dispatch_Branch
 		);
 
 
@@ -100,62 +100,62 @@ module Dispatch_Decoder (
 			         		         	         			      
 			         case (Inst[5:0])
 			            R_ADD : begin 
-			               $display("INFO : Decoding Intruction = ADD");
-			               Dispatch_Opcode      = OP_ADD;                  
-	                   Dispatch_en_Int    	 = 1'b1;
+			               	$display("INFO : Decoding Intruction = ADD");
+			               	Dispatch_Opcode      = OP_ADD;                  
+	                   		Dispatch_en_Int    	 = 1'b1;
 			            end
 			            R_ADDU : begin 
-			               $display("INFO : Decoding Intruction = ADDU");
-			               Dispatch_Opcode      = OP_ADDU;                  
-	                   Dispatch_en_Int    	 = 1'b1;
+			               	$display("INFO : Decoding Intruction = ADDU");
+			               	Dispatch_Opcode      = OP_ADDU;                  
+	                   		Dispatch_en_Int    	 = 1'b1;
 			            end
 			            R_AND : begin 
-			               $display("INFO : Decoding Intruction = AND");
-			               Dispatch_Opcode      = OP_AND;                  
-	                   Dispatch_en_Int    	 = 1'b1;
+			               	$display("INFO : Decoding Intruction = AND");
+			               	Dispatch_Opcode      = OP_AND;                  
+	                   		Dispatch_en_Int    	 = 1'b1;
 			            end
 			            R_NOR : begin 
-			               $display("INFO : Decoding Intruction = NOR");
-			               Dispatch_Opcode      = OP_NOR;                  
-	                   Dispatch_en_Int    	 = 1'b1;
+			               	$display("INFO : Decoding Intruction = NOR");
+			               	Dispatch_Opcode      = OP_NOR;                  
+	                   		Dispatch_en_Int    	 = 1'b1;
 			            end
 			            R_OR : begin 
-			               $display("INFO : Decoding Intruction = OR");
-			               Dispatch_Opcode      = OP_OR;                  
-	                   Dispatch_en_Int    	 = 1'b1;
+			               	$display("INFO : Decoding Intruction = OR");
+			               	Dispatch_Opcode      = OP_OR;                  
+	                   		Dispatch_en_Int    	 = 1'b1;
 			            end
 			            R_SLT : begin 
-			               $display("INFO : Decoding Intruction = SLT");
-			               Dispatch_Opcode      = OP_SLT;                  
-	                   Dispatch_en_Int    	 = 1'b1;
+			               	$display("INFO : Decoding Intruction = SLT");
+			               	Dispatch_Opcode      = OP_SLT;                  
+	                   		Dispatch_en_Int    	 = 1'b1;
 			            end
 			            R_SLTU : begin 
-			               $display("INFO : Decoding Intruction = SLTU");
-			               Dispatch_Opcode      = OP_SLTU;                  
-	                   Dispatch_en_Int    	 = 1'b1;
+			               	$display("INFO : Decoding Intruction = SLTU");
+			               	Dispatch_Opcode      = OP_SLTU;                  
+	                   		Dispatch_en_Int    	 = 1'b1;
 			            end
 			            R_SUB : begin 
-			               $display("INFO : Decoding Intruction = SUB");
-			               Dispatch_Opcode      = OP_SUB;                  
-	                   Dispatch_en_Int    	 = 1'b1;
+			               	$display("INFO : Decoding Intruction = SUB");
+			               	Dispatch_Opcode      = OP_SUB;                  
+	                   		Dispatch_en_Int    	 = 1'b1;
 			            end
 			            R_SLL : begin 
-			               $display("INFO : Decoding Intruction = SLL");
-			               Dispatch_Opcode      = OP_SLL;                  
-	                   Dispatch_en_Int    	 = 1'b1;
+			               	$display("INFO : Decoding Intruction = SLL");
+			               	Dispatch_Opcode      = OP_SLL;                  
+	                   		Dispatch_en_Int    	 = 1'b1;
 			            end
 			            R_SRL : begin 
-			               $display("INFO : Decoding Intruction = SRL");
-			               Dispatch_Opcode      = OP_SRL;                  
-	                   Dispatch_en_Int    	 = 1'b1;
+			               	$display("INFO : Decoding Intruction = SRL");
+			               	Dispatch_Opcode      = OP_SRL;                  
+	                   		Dispatch_en_Int    	 = 1'b1;
 			            end
 			            R_MULT : begin 
-			               $display("INFO : Decoding Intruction = MULT");
-			               Dispatch_Opcode      = 4'b0000;                  
-	                   Dispatch_en_Mult    	= 1'b1;
+			               	$display("INFO : Decoding Intruction = MULT");
+			               	Dispatch_Opcode      = 4'b0000;                  
+	                   		Dispatch_en_Mult    	= 1'b1;
 			            end	            
 			            default : begin
-			               $display("ERROR : Decoding Intruction type R");
+			               	$display("ERROR : Decoding Intruction type R = %d",Inst[5:0]);
 			            end
 			            
 			         endcase

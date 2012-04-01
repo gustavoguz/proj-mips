@@ -24,7 +24,8 @@ module tagfifo(
    Rd_en,
    Tag_Out,
    tagFifo_full,
-   tagFifo_empty
+   tagFifo_empty,
+   increment
 );
 
 parameter DSIZE = 5;
@@ -38,7 +39,7 @@ input 			RB_Tag_Valid;
 input			clock;
 input			reset;
 input 			Rd_en;
-
+input 			increment;
 reg [ASIZE:0] wptr;
 reg [ASIZE:0] rptr;
 
@@ -62,8 +63,10 @@ always @(posedge clock or negedge reset)
 always @(posedge clock or negedge reset)
         if (!reset) 
 		rptr <= 6'b00_0000;
-        else if (Rd_en && !tagFifo_empty) 
+        else if (Rd_en && !tagFifo_empty && increment) 
 		rptr <= rptr+1;
+	else 
+		rptr <= rptr;
 
 assign Tag_Out = ex_mem[rptr[ASIZE-1:0]];
 assign tagFifo_empty = (rptr == wptr);

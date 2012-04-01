@@ -50,7 +50,9 @@ begin
 		end
 	end
 end
-
+always @(Rd_Addr1 or Rd_Addr2) begin
+	`ifdef DEBUG_RegFileTmp $display ("INFO : RegFileTmp : Status -> REGFILETEMP = %p",RegFile); `endif
+end 
 assign Data_out1 = RegFile[Rd_Addr1];
 assign Data_out2 = RegFile[Rd_Addr2];
 endmodule
