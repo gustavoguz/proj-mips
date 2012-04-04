@@ -30,6 +30,8 @@ module testbench;
 	reg			issueque_full_ld_st;
 	wire [ 15:  0]		dispatch_imm_ld_st;
 	wire			dispatch_en_mul;
+	wire			flush;
+	wire 			Retire_store_ready;
 	reg			issueque_mul_full;
 
 dispatch_unit dispatch_unit (
@@ -58,7 +60,9 @@ dispatch_unit dispatch_unit (
 	.issueque_full_ld_st	(issueque_full_ld_st),
 	.dispatch_imm_ld_st	(dispatch_imm_ld_st),
 	.dispatch_en_mul	(dispatch_en_mul),
-	.issueque_mul_full	(issueque_mul_full)
+	.issueque_mul_full	(issueque_mul_full),
+	.flush			(flush),
+	.Retire_store_ready	(Retire_store_ready)
 	);
 always begin
 # 5	clock = !clock;

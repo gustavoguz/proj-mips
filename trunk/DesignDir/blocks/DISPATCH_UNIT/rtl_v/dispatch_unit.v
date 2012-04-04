@@ -61,6 +61,7 @@ module dispatch_unit (
 	input 			Cdb_branch,
 	input			Cdb_branch_taken,
 	
+	output			Retire_store_ready,	
 	output			flush
 	);
 
@@ -125,7 +126,7 @@ wire	[ 31:  0]	Retire_data;
 wire	[ 31:  0]	Retire_pc;
 wire			Retire_branch;
 wire			Retire_branch_taken;
-wire			Retire_store_ready;
+//wire			Retire_store_ready;
 wire			Retire_valid;
 
 reg	[31:0]		rs_data;

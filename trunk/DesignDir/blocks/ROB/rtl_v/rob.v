@@ -151,7 +151,7 @@ always @* begin
 	Rt_reg_logic 	= Rt_reg_reg;
 	flush		= flush_reg;
 end
-//assign flush_flag  	=flush;
+assign flush_flag  	=flush;
 // -------------------------     Control del ROB     ---------------------------------
 
 always @ (posedge clock or posedge reset) begin
