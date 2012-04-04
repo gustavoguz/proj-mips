@@ -18,5 +18,7 @@ add wave -position anchor sim:/testbench/rob/RequestAddNew
 add wave -position anchor sim:/testbench/rob/RequestRetire
 add wave -position anchor sim:/testbench/rob/RequestFlush
 add wave -position anchor sim:/testbench/rob/regfiletmp/RegFile
-add wave -position anchor sim:/testbench/rob/*
+add wave -position anchor sim:/testbench/rob/OrderQueueNew_write
+add wave -position anchor sim:/testbench/rob/Dispatch_Rd_tag
+#add wave -position anchor sim:/testbench/rob/*
 run -all

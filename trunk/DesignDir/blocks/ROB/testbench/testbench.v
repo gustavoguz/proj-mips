@@ -74,13 +74,26 @@ rob rob (
 	);
 
 integer i;
+reg  [ 4:0] temp=0;
 
 always begin
 #5 	clock=!clock;
 end
 
-always
-#5 new_rd_tag=!new_rd_tag;
+always @(posedge clock or posedge reset) begin
+	$display ("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ i %d temp %d", i, temp);
+	if (reset) begin
+	temp <=0;
+	end else begin
+	temp <=i;
+		if (i != temp) begin
+			new_rd_tag <=1;
+		end else begin
+			new_rd_tag <=0;
+		end
+	end
+end
+//#5 new_rd_tag=!new_rd_tag;
 
 initial begin
 	clock=0;
@@ -99,13 +112,17 @@ Cdb_branch_taken=0;
 new_rd_tag_valid=0;
 new_rd_tag=0;
 for (i=0; i<40; i=i+1) begin
-#10
+//#10
+#30
 	`ifdef DEBUG_ROB_TB $display("Nueva instruccion,Dispatch_Rd_tag=%d,Dispatch_Rd_reg=%d,Dispatch_pc=%d,Dispatch_inst_type=2'b11",i,i,Dispatch_pc+4); `endif
 	Dispatch_Rd_tag=i;
 	Dispatch_Rd_reg=i;
 	Dispatch_pc=Dispatch_pc+4;
 	Dispatch_inst_type=2'b11;
 	new_rd_tag_valid=1;
+	temp <= 0;
+	//new_rd_tag =1;
+//#5
 end
 new_rd_tag_valid=0;
 
