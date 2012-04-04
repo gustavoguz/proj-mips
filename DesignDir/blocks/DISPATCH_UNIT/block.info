@@ -1,2 +1,2 @@
 BLOCK_NAME: DISPATCH_UNIT
-SUB_LIST: BranchLogic Decoder RegFile ROB RST_ TagFifo Deco5_32 Coder32_5 Order_Queue FiFo RegFileTmp ADDRESS_LOGIC
+SUB_LIST: BranchLogic Decoder RegFile ROB RST_ TagFifo Deco5_32 Coder32_5 Order_Queue FiFo RegFileTmp ADDRESS_LOGIC LRU

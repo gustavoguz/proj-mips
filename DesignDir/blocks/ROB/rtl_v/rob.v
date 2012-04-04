@@ -50,7 +50,8 @@ module rob (
 	output reg			Retire_branch,// (1) – out // si se trata de un branch la instruccion que fue retirada
 	output reg			Retire_branch_taken,// (1) – out // se el branch tiene que ser tomado (prediccion equivocada)
 	output reg			Retire_store_ready,// (1) – out // si se trata de un store la instruccion que fue retirada
-	output reg			Retire_valid // (1) – out //indica si se esta retirando una instruccion.
+	output reg			Retire_valid, // (1) – out //indica si se esta retirando una instruccion.
+	output				flush_flag
 	);
 
 
@@ -117,6 +118,7 @@ always @ * begin
 end
 
 always @* begin 
+//always @( OrderQueueFull or new_rd_tag or new_rd_tag_valid) begin 
 	if (!OrderQueueFull && new_rd_tag && new_rd_tag_valid) begin // Esnecesario agregar new_rd_tag_valid?
 		`ifdef DEBUG_ROB $display ("INFO : ROB : Request Add New R"); `endif
 		RequestAddNew = 1;
@@ -149,7 +151,7 @@ always @* begin
 	Rt_reg_logic 	= Rt_reg_reg;
 	flush		= flush_reg;
 end
-
+//assign flush_flag  	=flush;
 // -------------------------     Control del ROB     ---------------------------------
 
 always @ (posedge clock or posedge reset) begin
@@ -166,7 +168,10 @@ always @ (posedge clock or posedge reset) begin
 	Retire_branch_taken 	<= 0;
 	Retire_store_ready  	<= 0;
 	Retire_valid_reg  	<= 1; 
+	RequestAddNew_reg 	<= 0;
 	end else begin
+		OrderQueueNew_write 	<= 0; // Order queue : write enable
+		RequestAddNew_reg 	<= 0;
 		if (RequestQueryRt) begin
 			Rt_reg_reg		<= Rt_reg;
 			Rt_token 		<= { Token_tag_rt , Token_valid_rt };

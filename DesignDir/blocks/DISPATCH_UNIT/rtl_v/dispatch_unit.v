@@ -38,15 +38,17 @@ module dispatch_unit (
 	output reg [  4:  0]	dispatch_rd_tag,	// TAG asignado al registro destino de la instrucción
 	
 	// - Señales especificas para la cola de ejecución de enteros.
-	output reg 		dispatch_en_integer,	// unidad de despacho intenta escribir una instrucción en la cola de ejecución de enteros.
-	input			issueque_integer_full,	// Bandera “llena” de la cola de ejecución de enteros.
+	output reg 		dispatch_en_integer_A,	// unidad de despacho intenta escribir una instrucción en la cola de ejecución de enteros.
+	output reg 		dispatch_en_integer_B,	// unidad de despacho intenta escribir una instrucción en la cola de ejecución de enteros.
+	input			issueque_integer_full_A,	// Bandera “llena” de la cola de ejecución de enteros.
+	input			issueque_integer_full_B,	// Bandera “llena” de la cola de ejecución de enteros.
 	output reg [  3:  0]	dispatch_opcode,	// TODO:revisar si -> 3‐bit opcode para la ALU.
 	output reg [  4:  0]	dispatch_shfamt,	// 5-bits en caso de una instrucción del tipo shift
 	
 	// - Señales especificas para la Cola de ejecución de acceso a memoria.
 	output reg		dispatch_en_ld_st,	// DU intenta escribir una instrucción en la cola LD/ST.
 	input			issueque_full_ld_st,	// Bandera “llena” de la cola de ejecución LD / ST.
-//	output			dispatch_opcode,	// 1 ‐ bit opcode para distinguir entre LD y ST.
+	output reg		dispatch_opcode_ld_st,	// 1 ‐ bit opcode para distinguir entre LD y ST.
 	output reg [ 15:  0]	dispatch_imm_ld_st,	// 16 ‐ bit del campo inmediato para calcular la dirección de memoria.
 
 	// - Señales especificas para la Cola de ejecución de multiplicaciones.
@@ -57,8 +59,9 @@ module dispatch_unit (
 	input			Cdb_valid,
 	input	[ 31:  0]	Cdb_data,
 	input 			Cdb_branch,
-	input			Cdb_branch_taken
-
+	input			Cdb_branch_taken,
+	
+	output			flush
 	);
 
 // REGISTER FILE :
@@ -140,6 +143,13 @@ reg			rt_data_valid_reg;
 reg	[4:0]		rt_tag_reg;
 reg	[4:0]		rd_tag_reg;
 
+// LRU
+
+reg 			intfull_0;
+reg			intfull_1;
+reg			last;	
+wire			next;
+
 // TAG FIFO :
 
 reg	[4:0]  		RB_Tag;
@@ -157,54 +167,95 @@ wire 			tagFifo_empty;
 //reg	[25:0]		address;
 wire	[31:0]		Jmp_branch_address;
 
-reg	[31:0] 		fetch_intruction_reg;
+reg	[31:0] 		ifetch_pc_4_reg;
 reg new_instruction;
+reg new_instruction_reg;
 
-// Nueva instruccion al rob 
+assign Dispatch_jmp = (Dispatch_Type_J | Retire_branch_taken);
+assign Dispatch_jmp_addr = (Retire_branch)? Retire_pc : Jmp_branch_address;
+
+
+reg [4:0] temp ;
+/*
 always @(posedge clock or posedge reset) begin
 	if (reset) begin
-	end else if (new_instruction) begin
-		Dispatch_Rd_tag		<= rd_tag_reg;
-		Dispatch_Rd_reg		<= ifetch_intruction[15:11];
-		Dispatch_pc		<= ifetch_pc_4;// TODO : checkar que pc guardar
-		Dispatch_inst_type	<= 2'b11; // TODO: esta señal deberai salir del decoder.
-		new_rd_tag_valid	<= 1;
-		new_rd_tag		<= 1;
+		new_rd_tag <= 0;
 	end else begin
-		new_rd_tag_valid	<= 0;
-		new_rd_tag		<= 0;
+		new_rd_tag <= new_instruction;
 	end
 end
+*/
+
+// Nueva instruccion al rob 
+always @(posedge new_instruction or posedge reset) begin
+	if (reset) begin
+	end else if (new_instruction) begin
+		$display("INFO : DISPATCHER :  NEW INSTRUCTION TO ROB");
+		Dispatch_Rd_tag		<= Tag_Out;
+		if (Dispatch_Type_R) begin
+			Dispatch_Rd_reg		<= ifetch_intruction[15:11];
+			Dispatch_inst_type	<= 2'b00;
+		end
+		if (Dispatch_Type_I) begin
+			Dispatch_Rd_reg		<= ifetch_intruction[20:16];
+			if (!dispatch_opcode_reg[0])
+			Dispatch_inst_type	<= 2'b10;
+			else
+			Dispatch_inst_type	<= 2'b11;
+		end
+		if (Dispatch_Branch) begin
+			Dispatch_pc		<= Jmp_branch_address;
+			Dispatch_inst_type	<= 2'b01;
+		end else begin
+			Dispatch_pc		<= ifetch_pc_4;
+		end
+		new_rd_tag_valid	<= 1;
+	end
+end
+
 // retirar 
 always @(posedge clock or posedge reset) begin
 	if (reset) begin
 	end  else if (Retire_valid) begin 
+	$display (" -------------RETIRE -----");
+	$display (" -------------RETIRE -----");
+	$display (" -------------RETIRE -----");
+	$display (" -------------RETIRE -----");
+	$display (" -------------RETIRE -----");
 	RB_Tag_Valid		<= 1;
-	Rd_en			<= 1;
 	W_en			<= 1;
 	RB_Tag 			<= Retire_rd_tag;
 	Waddr			<= Retire_rd_reg;
 	Data_In 		<= Retire_data;
-	/*
-	Retire_pc;
-	Retire_branch;
-	Retire_branch_taken;
-	Retire_store_ready;
-	*/
+	// TODO: retirar el branch:
+	//Retire_pc;
+	//Retire_branch;
+	//Retire_branch_taken;
+	//Retire_store_ready;
+	
 	end else begin
 	Waddr			<= 0;
 	Data_In 		<= 0;
-	Rd_en			<= 0;
+	//Rd_en			<= 0;
 	W_en			<= 0;
 	end
 end 
 
 always @(posedge clock or posedge reset) begin
 	if (reset) begin
-		fetch_intruction_reg <= 0;
+		new_instruction_reg <= 0;
 	end else begin
-		fetch_intruction_reg <= ifetch_intruction;
-		if (fetch_intruction_reg != ifetch_intruction) begin
+		new_instruction_reg <= new_instruction;
+	end
+end
+
+always @(posedge clock or posedge reset) begin
+	if (reset) begin
+		ifetch_pc_4_reg <= 100;
+		new_instruction <= 0;
+	end else begin
+		ifetch_pc_4_reg <= ifetch_pc_4;
+		if (ifetch_pc_4_reg != ifetch_pc_4) begin
 			new_instruction <= 1;
 		end else 
 			new_instruction <= 0;
@@ -214,91 +265,158 @@ end
 always @* begin
  	Rs_reg_ren 	= new_instruction;
  	Rt_reg_ren 	= new_instruction;
+	increment	= new_instruction;
+	new_rd_tag 	= new_instruction;
+	if(Dispatch_Type_R && !issueque_integer_full_A && !issueque_integer_full_B && !issueque_full_ld_st && !issueque_mul_full)	
+		Rd_en		= new_instruction;
+	else 
+		Rd_en		= 0;
+	// si las colas estan llenas no se piede una nueva instruccion,
+	if (!issueque_integer_full_A && !issueque_integer_full_B && !issueque_full_ld_st && !issueque_mul_full)	
+		Dispatch_ren	= 1;
+	else 
+		Dispatch_ren	= 0;
+
 end
 
-always @(ifetch_intruction) begin
+always @(posedge new_instruction) begin
 	// Read Rs and Rt 
 	$display ("INFO : DISPATCHER : Reading Registers: Rs %d and Rt %d", ifetch_intruction [25:21],ifetch_intruction [20:16]);
-	Rs_addr 	= ifetch_intruction [25:21]; // Rs; 
-	Rt_addr 	= ifetch_intruction [20:16]; // Rt;
+	Rs_addr 	<= ifetch_intruction [25:21]; // Rs; 
+	Rt_addr 	<= ifetch_intruction [20:16]; // Rt;
+	rd_tag 		<= Tag_Out;
+end
+	
+always @(posedge new_instruction or posedge new_instruction_reg) begin
 	
 	if (Rs_Data_valid) begin
-	rs_data = Rs_Data_spec;
-	rs_tag  = Rs_token[5:1];
-	rs_data_valid = Rs_Data_valid;
+	rs_data <= Rs_Data_spec;
+	rs_tag  <= Rs_token[5:1];
+	rs_data_valid <= Rs_Data_valid;
 	end else begin
-	rs_data = RegFile_Rs_reg;
-	rs_tag  = 0;
-	rs_data_valid =1;
+	rs_data <= RegFile_Rs_reg;
+	rs_tag  <= 0;
+	rs_data_valid <=1;
 	end
-	if (Rs_Data_valid) begin
-	rt_data = Rt_Data_spec;
-	rt_tag  = Rt_token[5:1];
+
+	if (Rt_Data_valid) begin
+	rt_data <= Rt_Data_spec;
+	rt_tag  <= Rt_token[5:1];
 	rt_data_valid =Rt_Data_valid;
 	end else begin
-	rt_data = RegFile_Rt_reg;
-	rt_tag  = 0;
-	rt_data_valid =1;
+		if (Dispatch_Type_I) begin
+			rt_data <=  ifetch_intruction [15:0];
+		end else begin
+			rt_data <= RegFile_Rt_reg;
+			rt_tag  <= 0;
+			rt_data_valid <=1;
+		end
 	end
-	rd_tag 	= Tag_Out;
 end
 
-always @ (posedge clock or posedge reset) begin
+always @* begin
+		$display ("INFO : DISPATCHER : -------- Sending information to queue I ------------");	
+		$display ("---> rs_data       %d",rs_data);
+		$display ("---> rs_data_valid %d",rs_data_valid);
+		$display ("---> rs_tag        %d",rs_tag);
+		$display ("---> rt_data       %d",rt_data);
+		$display ("---> rt_data_valid %d",rt_data_valid);
+		$display ("---> rt_tag        %d",rt_tag);
+		$display ("---> rd_tag        %d",rd_tag);
+		
+		dispatch_rs_data 	= rs_data;
+		dispatch_rs_data_valid	= rs_data_valid;
+		dispatch_rs_tag		= rs_tag;
+
+		dispatch_rt_data	= rt_data;
+		dispatch_rt_data_valid	= rt_data_valid;
+		dispatch_rt_tag		= rt_tag;
+
+		dispatch_rd_tag		= rd_tag;
+end
+
+always @ (posedge new_instruction_reg or posedge reset) begin
 	// - Señales comunes para todas las colas de ejecución.
 	if (reset) begin
-		Rd_en 		<= 0;
-		increment 	<= 0;
+		last <= 0;
 	end else begin 
-		$display ("INFO : DISPATCHER : -------- Sending informations to queues------------");	
-		$display ("---> rs_data       %d",rs_data_reg);
-		$display ("---> rs_data_valid %d",rs_data_valid_reg);
-		$display ("---> rs_tag        %d",rs_tag_reg);
-		$display ("---> rt_data       %d",rt_data_reg);
-		$display ("---> rt_data_valid %d",rt_data_valid_reg);
-		$display ("---> rt_tag        %d",rt_tag_reg);
-		$display ("---> rd_tag        %d",rd_tag_reg);
+/*
+		$display ("INFO : DISPATCHER : -------- Sending information to queue I ------------");	
+		$display ("---> rs_data       %d",rs_data);
+		$display ("---> rs_data_valid %d",rs_data_valid);
+		$display ("---> rs_tag        %d",rs_tag);
+		$display ("---> rt_data       %d",rt_data);
+		$display ("---> rt_data_valid %d",rt_data_valid);
+		$display ("---> rt_tag        %d",rt_tag);
+		$display ("---> rd_tag        %d",rd_tag);
+		
+		dispatch_rs_data 	<= rs_data;
+		dispatch_rs_data_valid	<= rs_data_valid;
+		dispatch_rs_tag		<= rs_tag;
 
-		if(Dispatch_Type_R && !issueque_integer_full && !issueque_full_ld_st && !issueque_mul_full)	
-		Rd_en 			<= new_instruction;
-		else 
-		Rd_en 			<= 0;
+		dispatch_rt_data	<= rt_data;
+		dispatch_rt_data_valid	<= rt_data_valid;
+		dispatch_rt_tag		<= rt_tag;
 
-		increment 		<= new_instruction; 
-
-		dispatch_rs_data 	<= rs_data_reg;
-		dispatch_rs_data_valid	<= rs_data_valid_reg;
-		dispatch_rs_tag		<= rs_tag_reg;
-
-		dispatch_rt_data	<= rt_data_reg;
-		dispatch_rt_data_valid	<= rt_data_valid_reg;
-		dispatch_rt_tag		<= rt_tag_reg;
-
-		dispatch_rd_tag		<= rd_tag_reg;
+		dispatch_rd_tag		<= rd_tag;
+*/		
 		// - Señales especificas para la cola de ejecución de enteros.
-		if (!issueque_integer_full) begin
-			dispatch_en_integer	<= en_integer_reg;
-			dispatch_opcode		<= opcode_reg;
-			dispatch_shfamt		<= shfamt_reg;
-		end
+		//if (!issueque_integer_full_A && !issueque_integer_full_B) begin
+			//dispatch_en_integer	<= dispatch_en_integer_reg;
+			if (dispatch_en_integer_reg && (!issueque_integer_full_A && !issueque_integer_full_B)) begin	
+				last			<= next;
+				if (next)	begin
+					dispatch_en_integer_A	<= 1;
+					dispatch_en_integer_B	<= 0;
+				end else begin
+					dispatch_en_integer_A	<= 0;
+					dispatch_en_integer_B	<= 1;
+				end
+			end else begin
+				dispatch_en_integer_A	<= 0;
+				dispatch_en_integer_B	<= 0;
+			end
+			dispatch_opcode		<= dispatch_opcode_reg;
+			dispatch_shfamt		<= dispatch_shfamt_reg;
+		//end
 		// - Señales especificas para la Cola de ejecución de acceso a memoria.
 		if (!issueque_full_ld_st) begin
-			dispatch_en_ld_st	<= en_ld_st_reg;
-			dispatch_imm_ld_st	<= imm_ld_st_reg;
+			dispatch_en_ld_st	<= dispatch_en_ld_st_reg;
+			dispatch_imm_ld_st	<= dispatch_imm_ld_st_reg;
+			dispatch_opcode_ld_st	<= dispatch_opcode_reg[0];
 		end
 			// - Señales especificas para la Cola de ejecución de multiplicaciones.
 		if (!issueque_mul_full) begin
-			dispatch_en_mul		<= en_mul_reg;
+			dispatch_en_mul		<= dispatch_en_mul_reg;
 		end
-
+		/*
+		// si las colas estan llenas no se piede una nueva instruccion,
 		if (!issueque_integer_full && !issueque_full_ld_st && !issueque_mul_full)	
 			Dispatch_ren	<= 1;
 		else 
 			Dispatch_ren	<= 0;
-
+		*/
 	end 
 end
+/*
+always @(posedge clock or posedge reset ) begin
+	if (reset) begin 
+	rs_data_reg		<= 0;
+	rs_data_valid_reg	<= 0;
+	rs_tag_reg		<= 0;
+	rt_data_reg		<= 0;
+	rt_data_valid_reg	<= 0;
+	rt_tag_reg		<= 0;
+	rd_tag_reg		<= 0;
+	opcode_reg 		<= 0;
+	shfamt_reg 		<= 0;
+	en_ld_st_reg 		<= 0;
+	imm_ld_st_reg 		<= 0;
+	en_mul_reg		<= 0;
+	en_integer_reg		<= 0;	
+	
+	end else begin
 
-always @(posedge clock) begin
 	rs_data_reg		<= rs_data;
 	rs_data_valid_reg	<= rs_data_valid;
 	rs_tag_reg		<= rs_tag;
@@ -312,8 +430,9 @@ always @(posedge clock) begin
 	imm_ld_st_reg 		<= dispatch_imm_ld_st_reg;
 	en_mul_reg		<= dispatch_en_mul_reg;
 	en_integer_reg		<= dispatch_en_integer_reg;	
+	end
 end
-
+*/
 regfile regfile(
 	.clock			(clock),
 	.reset			(reset),
@@ -391,7 +510,16 @@ rob rob (
 	.Retire_branch		(Retire_branch),
 	.Retire_branch_taken	(Retire_branch_taken),
 	.Retire_store_ready	(Retire_store_ready),
-	.Retire_valid		(Retire_valid)
+	.Retire_valid		(Retire_valid),
+	.flush_flag		(flush)
+	/// TODO: el flush debe salir del rob +
+
 	);
 
+lru lru (
+	.intfull_0		(issueque_integer_full_A),
+	.intfull_1		(issueque_integer_full_B),
+	.last			(last),
+	.next			(next)
+	);
 endmodule 

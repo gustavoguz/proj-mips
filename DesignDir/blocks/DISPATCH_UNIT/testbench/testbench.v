@@ -20,8 +20,10 @@ module testbench;
 	wire 			dispatch_rt_data_valid;
 	wire [  4:  0]		dispatch_rt_tag;
 	wire [  4:  0]		dispatch_rd_tag;
-	wire 			dispatch_en_integer;
-	reg			issueque_integer_full;
+	wire 			dispatch_en_integer_A;
+	wire 			dispatch_en_integer_B;
+	reg			issueque_integer_full_A;
+	reg			issueque_integer_full_B;
 	wire [  3:  0]		dispatch_opcode;
 	wire [  4:  0]		dispatch_shfamt;
 	wire			dispatch_en_ld_st;
@@ -46,8 +48,10 @@ dispatch_unit dispatch_unit (
 	.dispatch_rt_data_valid	(dispatch_rt_data_valid),
 	.dispatch_rt_tag	(dispatch_rt_tag),
 	.dispatch_rd_tag	(dispatch_rd_tag),
-	.dispatch_en_integer	(dispatch_en_integer),
-	.issueque_integer_full	(issueque_integer_full),
+	.dispatch_en_integer_A	(dispatch_en_integer_A),
+	.dispatch_en_integer_B	(dispatch_en_integer_B),
+	.issueque_integer_full_A	(issueque_integer_full_A),
+	.issueque_integer_full_B	(issueque_integer_full_B),
 	.dispatch_opcode	(dispatch_opcode),
 	.dispatch_shfamt	(dispatch_shfamt),
 	.dispatch_en_ld_st	(dispatch_en_ld_st),
@@ -63,19 +67,21 @@ end
 initial begin
 	clock =	0;
 	reset = 0;
-#5	reset = 0;
+	reset = 0;
 #5	reset = 0;
 	reset = 1;
-#5	reset = 0;
+#10	reset = 0;
 //mem [ 0] = 32'h00000020 ; //add $0, $0, $0     //nop *** INITIALIZATION FOR BUBBLE SORT ***
 //mem [ 1] = 32'h0080F820 ; //add $31, $4, $0    //$31 = 4 
 //mem [ 2] = 32'h00BF1019 ; //mul $2, $5, $31    //ak = 4 * num_of_items
 //mem [ 3] = 32'h00000020 ; //add $0, $0, $0     //noop
+$display ("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
 $display ("INFO : DISPATCHER_TB : START ");
 ifetch_pc_4=0;
 ifetch_intruction=32'h0080F820;
 ifetch_empty=0;
-issueque_integer_full=0;
+issueque_integer_full_A=0;
+issueque_integer_full_B=0;
 issueque_full_ld_st=0;
 issueque_mul_full=0;
 //------------------------------------
@@ -85,7 +91,8 @@ ifetch_pc_4=0;
 ifetch_pc_4=4;
 ifetch_intruction=32'h00BF1018;
 ifetch_empty=0;
-issueque_integer_full=0;
+issueque_integer_full_A=0;
+issueque_integer_full_B=0;
 issueque_full_ld_st=0;
 issueque_mul_full=0;
 //------------------------------------
@@ -95,7 +102,8 @@ ifetch_pc_4=0;
 ifetch_pc_4=0;
 ifetch_intruction=32'h00000020;
 ifetch_empty=0;
-issueque_integer_full=0;
+issueque_integer_full_A=0;
+issueque_integer_full_B=0;
 issueque_full_ld_st=0;
 issueque_mul_full=0;
 //------------------------------------
