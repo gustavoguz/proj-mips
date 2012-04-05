@@ -17,3 +17,5 @@
 /home/gustavo/MDE/uP_Design/MIPS/trunk/DesignDir/blocks/ADDRESS_LOGIC/rtl_v/AddressLogic.v
 /home/gustavo/MDE/uP_Design/MIPS/trunk/DesignDir/blocks/LRU/rtl_v/lru.v
 /home/gustavo/MDE/uP_Design/MIPS/trunk/DesignDir/blocks/ROB/rtl_v/rob.v
+/home/gustavo/MDE/uP_Design/MIPS/trunk/DesignDir/blocks/ICache/rtl_v/i_cache.v
+/home/gustavo/MDE/uP_Design/MIPS/trunk/DesignDir/blocks/IFQ/rtl_v/ifq.v
