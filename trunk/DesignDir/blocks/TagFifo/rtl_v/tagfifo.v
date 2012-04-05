@@ -48,25 +48,28 @@ parameter MEMSIZE = 1<<ASIZE-1;
 
 reg [DSIZE-1:0] ex_mem [0:MEMDEPTH-1];
 integer i;
-always @(posedge clock or negedge reset)
-        if (!reset) begin
-		wptr <= 6'b10_0000;
-		for (i=0;i<MEMSIZE;i=i+1) begin
-			ex_mem[i]<=i;
-		end
-	end
-        else if (RB_Tag_Valid && !tagFifo_full) begin
-                ex_mem[wptr[ASIZE-1:0]] <= RB_Tag;
-                wptr <= wptr+1;
-        end
 
-always @(posedge clock or negedge reset)
-        if (!reset) 
-		rptr <= 6'b00_0000;
-        else if (Rd_en && !tagFifo_empty && increment) 
-		rptr <= rptr+1;
-	else 
-		rptr <= rptr;
+always @(posedge clock or posedge reset) begin
+        if (reset) begin
+		       wptr <= 6'b10_0000;
+		       for (i=0;i<MEMSIZE;i=i+1) begin
+			        ex_mem[i]<=i;
+		       end
+	      end
+        else if (RB_Tag_Valid && !tagFifo_full) begin
+           ex_mem[wptr[ASIZE-1:0]] <= RB_Tag;
+           wptr <= wptr+1;
+        end
+end
+
+always @(posedge clock or posedge reset) begin
+    if (reset) 
+		   rptr <= 6'b00_0000;
+    else if (Rd_en && !tagFifo_empty && increment) 
+		   rptr <= rptr+1;
+	  else 
+		   rptr <= rptr;
+end
 
 assign Tag_Out = ex_mem[rptr[ASIZE-1:0]];
 assign tagFifo_empty = (rptr == wptr);

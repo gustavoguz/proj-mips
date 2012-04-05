@@ -12,120 +12,171 @@
 // Other	:
 //-----------------------------------------------------
 
-
-
 module ifq (
-   input              clk,
-   input              reset,
-   output reg  [31:0] Pc_in,
-   output reg         Rd_en_cache,
-   input      [127:0] Dout,
-   input              Dout_valid,
-   output reg  [31:0] Pc_out,
-   output reg  [31:0] Inst,
-   output reg         Empty,
-   input              Rd_en,
-   input       [31:0] Jmp_branch_address,
-   input              Jmp_branch_valid
-);
+	input [127:0]	Dout,
+	input 		Dout_valid,
+	input 		Rd_en,
+	input [31:0]	Jmp_branch_address,
+	input 		Jmp_branch_valid,
+	input 		clk,
+	input 		reset, 
 
-   reg  [127:0] mem   	[3:0];
-   reg  [127:0] mem_reg [3:0];
+	output reg  [31:0]	Pc_in,
+	output 		Rd_en_cache,
+	output reg [31:0]	Pc_out,
+	output [31:0]	Inst,
+	output 		Empty 
+	);
 
-   reg  [  4:0] wptr;
-   reg  [  4:0] wptr_reg;
-   reg  [  4:0] rptr;
-   reg  [  4:0] rptr_reg;
+reg BypassC;
 
-   reg  [ 31:0] pcin;
-   reg  [ 31:0] pcin_reg;
-   reg  [ 31:0] pcout;
-   reg  [ 31:0] pcout_reg;
+reg [3:0]wp;
+reg [3:0]rp; 
+ 
+wire [31:0]Inst_w;
+wire [127:0]QueueMux1;
+wire [31:0]Mux1ByPass;
+wire [31:0]DatMux2;
+wire [2:0]flagPointer;
 
-   reg is_full;
-   reg is_empty;
-   reg is_valid_read;
-   reg do_inc_rptr;
-   reg is_valid_write;
-   reg do_inc_wptr;
-   reg bypass_mux_sel;
-   
- always @(*) begin : signals
-      is_empty = (wptr_reg[4] == rptr_reg[4]) && (wptr_reg[3:2] == rptr_reg[3:2]);
-      is_full  = (wptr_reg[4] != rptr_reg[4]) && (wptr_reg[3:2] == rptr_reg[3:2]);
+assign flagPointer = wp[3:2] - rp[3:2];
+assign Empty = (flagPointer == 0)? 1'b1:1'b0;
 
-      bypass_mux_sel = Jmp_branch_valid | is_empty;
-      is_valid_read  = Rd_en      & ~is_empty;
-      is_valid_write = Dout_valid & ~is_full;
-      do_inc_rptr    = is_valid_read | bypass_mux_sel;
-      do_inc_wptr    = is_valid_write;
+assign full = (flagPointer > 2'b10) ? 1'b1 : 1'b0; 
+assign Rd_en_cache = !full;
 
-      rptr = (Jmp_branch_valid) ? 'h0 : (do_inc_rptr) ? rptr_reg + 1 : rptr_reg;
-      wptr = (Jmp_branch_valid) ? 'h0 : (do_inc_wptr) ? wptr_reg + 4 : wptr_reg;
+assign Inst = Inst_w;
+always@(posedge clk or posedge reset)
+begin 
+ if (reset)begin
+		Pc_in <= 32'b0;
+		wp <= 4'b0000;
+	end else begin
+		if (Jmp_branch_valid)begin
+			Pc_in <= {Jmp_branch_address[31:2],2'b00};  
+			wp <= 5'b0;
+		end else begin
+			if (!full & Dout_valid)begin
+				Pc_in <= Pc_in + 4;
+				wp <= wp + 4;
+			end
+		end
+	end    
+ end 
+ 
+ always @(posedge clk or posedge reset)begin 
+	if (reset)begin
+	   	BypassC <= 1'b1;
+    		rp <= 4'b0000;
+		  Pc_out <= 32'b0; 
+	end else begin
+		if (Jmp_branch_valid)begin
+	  		BypassC <= 1'b1;
+			rp <= {3'b000,Jmp_branch_address[1:0]};  
+			Pc_out <= Jmp_branch_address;
+		end else begin
+			if (Rd_en & Dout_valid)begin
+				rp <= rp + 1'b1;
+				Pc_out <= Pc_out + 1;
+			  BypassC <= 1'b0;
+			end			  
+		end
+	end
+end
 
-      pcout = (Jmp_branch_valid) ? Jmp_branch_address +  4 : (do_inc_rptr) ? pcout_reg + 4 : pcout_reg;
-      pcin  = (Jmp_branch_valid) ? Jmp_branch_address + 16 : (do_inc_wptr) ? pcin_reg + 16 : pcin_reg;
-   end
+IFQ_Queue Queue(
+.Dout(QueueMux1),
+.Din(Dout), 
+.clk(clk),
+.reset(reset),
+.rp(rp[3:2]),
+.wp(wp[3:2]),
+.wvalid(Dout_valid)); 
 
-   wire  [ 31:0] mem_mux_out, inst_mux_out, bypass_mux_out;
-   reg   [127:0] mem_line_128, Dout_cache;
+IFQ_MuxA FromQueue(
+.Din(QueueMux1),
+.Dout(Mux1ByPass),
+.rp(rp[1:0]));
 
-   always @(*) begin : bypass_func
-      Dout_cache = Dout;
-      mem_line_128 = mem_reg[rptr_reg[3:2]];
-   end 
-        mux42 Mux1 (.sel(rptr_reg[1:0]),
-	.din_0(Dout_cache[127:96]),
-	.din_1(Dout_cache[ 95:64]),
-	.din_2(Dout_cache[ 63:32]),
-	.din_3(Dout_cache[ 31: 0]),
-	.dout(inst_mux_out));
+IFQ_MuxA ByPassMX(
+.Din(Dout),
+.Dout(DatMux2),
+.rp(rp[1:0]));
 
-	mux42 Mux2 (.sel(rptr_reg[1:0]),
-       	.din_0	(mem_line_128[127:96]),	
-       	.din_1 	(mem_line_128[ 95:64]),
-       	.din_2	(mem_line_128[ 63:32]),
-       	.din_3	(mem_line_128[ 31: 0]),
-       	.dout	(mem_mux_out)	);
-   
-	mux21 bypass_mux (.sel	(bypass_mux_sel),
-        	.din_0	(mem_mux_out),
-        	.din_1	(inst_mux_out),
-        	.dout	(bypass_mux_out)	);
-
-   always @(*) begin :bypass_signal
-      
-      Pc_in = (Jmp_branch_valid) ? Jmp_branch_address : pcin_reg;
-      Rd_en_cache   = ~(Jmp_branch_valid | is_full);
-
-      Pc_out = (Jmp_branch_valid) ? pcout : pcout_reg;
-      Inst        = bypass_mux_out;
-      Empty       = is_empty;
-   end
-
-   always @(*) begin :mem_bl
-      integer i;
-      for(i = 0; i < 4; i = i + 1) mem[i] = mem_reg[i];
-
-      mem[wptr_reg[3:2]] = (Dout_valid) ? Dout : mem_reg[wptr_reg[3:2]];
-   end
-
-   always @(posedge clk) begin :reset_ptr
-      rptr_reg <= (reset) ? 5'b0 : rptr;
-      wptr_reg <= (reset) ? 5'b0 : wptr;
-   end
-
-   always @(posedge clk) begin :reset_pc
-      pcin_reg  <= (reset) ? 32'b0 : pcin;
-      pcout_reg <= (reset) ? 32'b0 : pcout;
-   end
-
-   always @(posedge clk) begin :mem_reg_bl
-      integer i;
-      for(i = 0; i < 4; i = i + 1) begin
-         mem_reg[i] <= (reset) ? 'h0 : mem[i];
-      end
-   end
+IFQ_Bypass Pass(
+.InQueue(Mux1ByPass),
+.InPass(DatMux2),
+.Dout(Inst_w),
+.ByPass(BypassC));
 
 endmodule
 
+module IFQ_MuxA(Din, Dout, rp);
+  output [31:0] Dout;
+  input [127:0] Din;
+  input [1:0]rp;
+  
+  reg [31:0] Dout;
+  
+always @(*)
+begin
+
+ case (rp) 
+    0 : Dout = Din[31:0]; 
+    1 : Dout = Din[63:32]; 
+    2 : Dout = Din[95:64]; 
+    3 : Dout = Din[127:96]; 
+  default : ; 
+ endcase 
+  
+end
+endmodule
+
+module IFQ_Bypass(InQueue, InPass, Dout, ByPass);
+  input [31:0]InQueue;
+  input [31:0]InPass;
+  input ByPass;
+  output [31:0]Dout;
+  reg [31:0]Dout;
+  
+  always @(*)
+  begin
+    if(ByPass)
+      Dout=InPass;
+    else
+      Dout=InQueue;    
+  end
+  
+endmodule
+
+
+module IFQ_Queue(Dout, Din, clk, reset, rp, wp, wvalid);
+
+  output [127:0]Dout; 
+  input [127:0]Din;  
+  input clk;
+  input reset;
+  input [1:0]rp; 
+  input [1:0]wp;  
+  input wvalid;
+
+reg [127:0]Queue [0:3];
+
+assign Dout = Queue[rp];
+
+always @(posedge clk or posedge reset)
+begin
+if (reset)
+  begin
+  Queue[0] <= 128'b0;
+  Queue[1] <= 128'b0;
+  Queue[2] <= 128'b0;
+  Queue[3] <= 128'b0; 
+  end
+else
+  begin
+    if (wvalid)
+  Queue[wp] <= Din;
+  end  
+end
+endmodule

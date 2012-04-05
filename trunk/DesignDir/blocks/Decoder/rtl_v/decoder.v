@@ -48,7 +48,7 @@ module Dispatch_Decoder (
    parameter R_SUB   = 6'h22;
    parameter R_SLL   = 6'h00;
    parameter R_SRL   = 6'h02;
-   parameter R_MULT  = 6'h18;
+   parameter R_MULT  = 6'h19;
    parameter I_ADDI  = 6'h08;
    parameter I_ADDIU = 6'h09;
    parameter I_ANDI  = 6'h0C;
@@ -140,7 +140,7 @@ module Dispatch_Decoder (
 	                   		Dispatch_en_Int    	 = 1'b1;
 			            end
 			            R_SLL : begin 
-			               	$display("INFO : Decoding Intruction = SLL");
+			               	$display("INFO : Decoding Intruction = SLL at time %0t", $time);
 			               	Dispatch_Opcode      = OP_SLL;                  
 	                   		Dispatch_en_Int    	 = 1'b1;
 			            end
