@@ -19,7 +19,7 @@ module regfile(
 	input	[ 4: 0]		Rd_Addr2
 );
 
-reg 	[32: 0] RegFile [32: 0];
+reg 	[31: 0] RegFile [31: 0];
 integer i;
 
 always @ (posedge clock or posedge reset) 
