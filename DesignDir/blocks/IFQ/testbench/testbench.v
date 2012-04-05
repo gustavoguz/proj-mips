@@ -51,16 +51,20 @@ always
 initial begin
 	clk=0;
 	reset =1;
+	Rd_en=0;
 	#10 reset =0;
 	Rd_en=1;
-	#40 Rd_en=0;
+	#40 
+	Rd_en=1;
+	#50 
+	Rd_en=1;
 end
 
 initial begin	
 	Jmp_branch_address=0;
 	Jmp_branch_valid=0;
 	#80 Jmp_branch_address=320;//|8'b10100_0000;
-	#80 Jmp_branch_valid=1;
+	#80 Jmp_branch_valid=0;
 end
 
 initial 

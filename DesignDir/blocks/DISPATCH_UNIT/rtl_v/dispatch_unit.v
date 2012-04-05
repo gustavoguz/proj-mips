@@ -23,8 +23,8 @@ module dispatch_unit (
 	input	[ 31:  0]	ifetch_pc_4,		// la instrucción es valida is ‘0’, invalida si ‘1’.
 	input	[ 31:  0]	ifetch_intruction, 	// 32 bits de la instrucción.
 	input			ifetch_empty,		// la instrucción es valida is ‘0’, invalida si ‘1’.
-	output  [ 31:  0]	Dispatch_jmp_addr,	// 32 bit dirección de salto.
-	output 			Dispatch_jmp,		// ‘1’ la instrucción es un jump o un branch que fue tomado.
+	output reg  [ 31:  0]	Dispatch_jmp_addr,	// 32 bit dirección de salto.
+	output reg			Dispatch_jmp,		// ‘1’ la instrucción es un jump o un branch que fue tomado.
 	output reg		Dispatch_ren,		// si ‘1’ el IFQ incrementa el apuntador de lectura y muestra una nueva instruccion,
 							// si ‘0’ el IFQ sigue mostrando la misma instrucción.
 	// Interface con Colas de ejecucion:
@@ -172,9 +172,25 @@ reg	[31:0] 		ifetch_pc_4_reg;
 reg new_instruction;
 reg new_instruction_reg;
 
-assign Dispatch_jmp = (Dispatch_Type_J | Retire_branch_taken);
-assign Dispatch_jmp_addr = (Retire_branch)? Retire_pc : Jmp_branch_address;
+//assign Dispatch_jmp      = (Dispatch_Type_J | Retire_branch_taken);
+//assign Dispatch_jmp_addr = (Retire_branch)? Retire_pc : Jmp_branch_address;
 
+always@(posedge clock, posedge reset) begin
+  
+  if(reset) begin
+  
+     Dispatch_jmp      <= 1'b0;
+     Dispatch_jmp_addr <= 1'b0;  
+  
+  end
+  else begin
+    
+     Dispatch_jmp      <= (Dispatch_Type_J | Retire_branch_taken);
+     Dispatch_jmp_addr <= (Retire_branch)? Retire_pc : Jmp_branch_address;  
+  
+  end
+  
+end
 
 reg [4:0] temp ;
 /*
@@ -244,7 +260,7 @@ end
 
 always @(posedge clock or posedge reset) begin
 	if (reset) begin
-		new_instruction_reg <= 0;
+		new_instruction_reg <= 1; 
 	end else begin
 		new_instruction_reg <= new_instruction;
 	end
@@ -258,12 +274,15 @@ always @(posedge clock or posedge reset) begin
 		ifetch_pc_4_reg <= ifetch_pc_4;
 		if (ifetch_pc_4_reg != ifetch_pc_4) begin
 			new_instruction <= 1;
+			$display("----------------------------------------------------------------------------------");
+			$display(" INFO : DISPATCHER : New Instruction ::: %h ::: ", ifetch_intruction);
+			$display("----------------------------------------------------------------------------------");
 		end else 
 			new_instruction <= 0;
 	end
 end
 
-always @* begin
+always @(*) begin
  	Rs_reg_ren 	= new_instruction;
  	Rt_reg_ren 	= new_instruction;
 	increment	= new_instruction;
@@ -272,17 +291,32 @@ always @* begin
 		Rd_en		= new_instruction;
 	else 
 		Rd_en		= 0;
-	// si las colas estan llenas no se piede una nueva instruccion,
-	if (!issueque_integer_full_A && !issueque_integer_full_B && !issueque_full_ld_st && !issueque_mul_full)	
+/*
+	// si alguna de las colas estan llenas no se piede una nueva instruccion,
+	if (new_instruction_reg && !issueque_integer_full_A && !issueque_integer_full_B && !issueque_full_ld_st && !issueque_mul_full)	
 		Dispatch_ren	= 1;
 	else 
 		Dispatch_ren	= 0;
+*/
+end
 
+always @(posedge clock or posedge reset) begin
+	if (reset) begin
+		Dispatch_ren	<= 0;
+	end else begin
+	// si alguna de las colas estan llenas no se piede una nueva instruccion,
+	//if (new_instruction_reg && !issueque_integer_full_A && !issueque_integer_full_B && !issueque_full_ld_st && !issueque_mul_full)	
+	if (!issueque_integer_full_A && !issueque_integer_full_B && !issueque_full_ld_st && !issueque_mul_full)	
+		Dispatch_ren	<= new_instruction_reg;
+	/*else 
+		Dispatch_ren	<= 0;
+*/
+	end
 end
 
 always @(posedge new_instruction) begin
 	// Read Rs and Rt 
-	$display ("INFO : DISPATCHER : Reading Registers: Rs %d and Rt %d", ifetch_intruction [25:21],ifetch_intruction [20:16]);
+	$display ("INFO : DISPATCHER : Instruction : %h Status: Reading Registers: Rs %d and Rt %d",ifetch_intruction,ifetch_intruction [25:21],ifetch_intruction [20:16]);
 	Rs_addr 	<= ifetch_intruction [25:21]; // Rs; 
 	Rt_addr 	<= ifetch_intruction [20:16]; // Rt;
 	rd_tag 		<= Tag_Out;
@@ -291,19 +325,19 @@ end
 always @(posedge new_instruction or posedge new_instruction_reg) begin
 	
 	if (Rs_Data_valid) begin
-	rs_data <= Rs_Data_spec;
-	rs_tag  <= Rs_token[5:1];
-	rs_data_valid <= Rs_Data_valid;
+		rs_data <= Rs_Data_spec;
+		rs_tag  <= Rs_token[5:1];
+		rs_data_valid <= Rs_Data_valid;
 	end else begin
-	rs_data <= RegFile_Rs_reg;
-	rs_tag  <= 0;
-	rs_data_valid <=1;
+		rs_data <= RegFile_Rs_reg;
+		rs_tag  <= 0;
+		rs_data_valid <=1;
 	end
 
 	if (Rt_Data_valid) begin
-	rt_data <= Rt_Data_spec;
-	rt_tag  <= Rt_token[5:1];
-	rt_data_valid =Rt_Data_valid;
+		rt_data <= Rt_Data_spec;
+		rt_tag  <= Rt_token[5:1];
+		rt_data_valid <=Rt_Data_valid;
 	end else begin
 		if (Dispatch_Type_I) begin
 			rt_data <=  ifetch_intruction [15:0];
@@ -462,7 +496,7 @@ Dispatch_Decoder Dispatch_Decoder (
 
 tagfifo tagfifo(
 	.clock			(clock),
-	.reset			(!reset),
+	.reset			(reset),
 	.Tag_Out		(Tag_Out),
 	.tagFifo_full		(tagFifo_full),
 	.tagFifo_empty		(tagFifo_empty),
