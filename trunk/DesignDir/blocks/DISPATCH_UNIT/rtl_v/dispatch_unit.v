@@ -24,7 +24,7 @@ module dispatch_unit (
 	input	[ 31:  0]	ifetch_intruction, 	// 32 bits de la instrucción.
 	input			ifetch_empty,		// la instrucción es valida is ‘0’, invalida si ‘1’.
 	output reg  [ 31:  0]	Dispatch_jmp_addr,	// 32 bit dirección de salto.
-	output reg			Dispatch_jmp,		// ‘1’ la instrucción es un jump o un branch que fue tomado.
+	output reg		Dispatch_jmp,		// ‘1’ la instrucción es un jump o un branch que fue tomado.
 	output reg		Dispatch_ren,		// si ‘1’ el IFQ incrementa el apuntador de lectura y muestra una nueva instruccion,
 							// si ‘0’ el IFQ sigue mostrando la misma instrucción.
 	// Interface con Colas de ejecucion:
@@ -226,7 +226,7 @@ always @(posedge new_instruction or posedge reset) begin
 		end else begin
 			Dispatch_pc		<= ifetch_pc_4;
 		end
-		new_rd_tag_valid	<= 1;
+		//new_rd_tag_valid	<= 1;
 	end
 end
 
@@ -286,7 +286,8 @@ always @(*) begin
  	Rs_reg_ren 	= new_instruction;
  	Rt_reg_ren 	= new_instruction;
 	increment	= new_instruction;
-	new_rd_tag 	= new_instruction;
+	new_rd_tag 	= (reset) ? 0 :new_instruction;
+	new_rd_tag_valid	=  (reset)? 0: new_instruction;
 	if(Dispatch_Type_R && !issueque_integer_full_A && !issueque_integer_full_B && !issueque_full_ld_st && !issueque_mul_full)	
 		Rd_en		= new_instruction;
 	else 
