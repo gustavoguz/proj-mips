@@ -17,7 +17,9 @@ always @(posedge clk or posedge reset) begin
 		Dout_valid <= 1'b0;   
 	end else begin
 		if(Rd_en)
-			Dout_valid <= 1'b1;       
+			Dout_valid <= 1'b1;  
+		else     
+			Dout_valid <= 1'b0;  
 	end
 
 end
