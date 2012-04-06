@@ -314,7 +314,7 @@ always @(posedge clock or posedge reset) begin
 */
 	end
 end
-
+/*
 always @(posedge new_instruction) begin
 	// Read Rs and Rt 
 	$display ("INFO : DISPATCHER : Instruction : %h Status: Reading Registers: Rs %d and Rt %d",ifetch_intruction,ifetch_intruction [25:21],ifetch_intruction [20:16]);
@@ -322,7 +322,67 @@ always @(posedge new_instruction) begin
 	Rt_addr 	<= ifetch_intruction [20:16]; // Rt;
 	rd_tag 		<= Tag_Out;
 end
+*/
+always @(posedge new_instruction or posedge reset) begin
+  
+  if(reset) begin
+     Rs_addr 	<= 0;
+     Rt_addr 	<= 0;
+     rd_tag 		<= 0;
+  end
+  else begin  
+	   // Read Rs and Rt 
+	   $display ("INFO : DISPATCHER : Instruction : %h Status: Reading Registers: Rs %d and Rt %d",ifetch_intruction,ifetch_intruction [25:21],ifetch_intruction [20:16]);
+  	   Rs_addr 	<= ifetch_intruction [25:21]; // Rs; 
+	   Rt_addr 	<= ifetch_intruction [20:16]; // Rt;
+	   rd_tag 		<= Tag_Out;
+	end
+end
+
+//always @(posedge new_instruction or posedge new_instruction_reg or posedge reset) begin
+always @(*) begin
+/*
+ if(reset) begin
+     rs_data <= 0;
+     rs_tag  <= 0;
+     rs_data_valid <= 0;
+     rt_data <= 0;
+     rt_tag  <= 0;
+     rt_data_valid <= 0;  
+ end
+ else begin
+*/
+//if (new_instruction_reg || new_instruction) begin
+	if (Rs_Data_valid) begin
+		rs_data = Rs_Data_spec;
+		rs_tag  = Rs_token[5:1];
+		rs_data_valid = Rs_Data_valid;
+	end else begin
+		rs_data = RegFile_Rs_reg;
+		rs_tag  = 0;
+		rs_data_valid =1;
+	end
+
+	if (Rt_Data_valid) begin
+		rt_data = Rt_Data_spec;
+		rt_tag  = Rt_token[5:1];
+		rt_data_valid =Rt_Data_valid;
+	end 
+	else begin
+		if (Dispatch_Type_I) begin
+			rt_data = dispatch_imm_ld_st_reg; //ifetch_intruction [15:0];
+		end else begin
+			rt_data = RegFile_Rt_reg;
+			rt_tag  = 0;
+			rt_data_valid =1;
+		end
+	end
 	
+// end
+//end
+end	
+/////////////////
+/*	
 always @(posedge new_instruction or posedge new_instruction_reg) begin
 	
 	if (Rs_Data_valid) begin
@@ -349,7 +409,7 @@ always @(posedge new_instruction or posedge new_instruction_reg) begin
 		end
 	end
 end
-
+*/
 always @* begin
 		$display ("INFO : DISPATCHER : -------- Sending information to queue I ------------");	
 		$display ("---> rs_data       %d",rs_data);
@@ -371,31 +431,14 @@ always @* begin
 		dispatch_rd_tag		= rd_tag;
 end
 
-always @ (posedge new_instruction_reg or posedge reset) begin
+always @ (posedge clock or posedge reset) begin
+//always @ (posedge new_instruction_reg or posedge reset) begin
+// NOTA: para que solo tome un 
 	// - Señales comunes para todas las colas de ejecución.
 	if (reset) begin
 		last <= 0;
 	end else begin 
-/*
-		$display ("INFO : DISPATCHER : -------- Sending information to queue I ------------");	
-		$display ("---> rs_data       %d",rs_data);
-		$display ("---> rs_data_valid %d",rs_data_valid);
-		$display ("---> rs_tag        %d",rs_tag);
-		$display ("---> rt_data       %d",rt_data);
-		$display ("---> rt_data_valid %d",rt_data_valid);
-		$display ("---> rt_tag        %d",rt_tag);
-		$display ("---> rd_tag        %d",rd_tag);
-		
-		dispatch_rs_data 	<= rs_data;
-		dispatch_rs_data_valid	<= rs_data_valid;
-		dispatch_rs_tag		<= rs_tag;
-
-		dispatch_rt_data	<= rt_data;
-		dispatch_rt_data_valid	<= rt_data_valid;
-		dispatch_rt_tag		<= rt_tag;
-
-		dispatch_rd_tag		<= rd_tag;
-*/		
+	if (new_instruction_reg) begin
 		// - Señales especificas para la cola de ejecución de enteros.
 		//if (!issueque_integer_full_A && !issueque_integer_full_B) begin
 			//dispatch_en_integer	<= dispatch_en_integer_reg;
@@ -425,50 +468,22 @@ always @ (posedge new_instruction_reg or posedge reset) begin
 		if (!issueque_mul_full) begin
 			dispatch_en_mul		<= dispatch_en_mul_reg;
 		end
-		/*
-		// si las colas estan llenas no se piede una nueva instruccion,
-		if (!issueque_integer_full && !issueque_full_ld_st && !issueque_mul_full)	
-			Dispatch_ren	<= 1;
-		else 
-			Dispatch_ren	<= 0;
-		*/
+	end else begin
+					dispatch_en_integer_A	<= 0;
+					dispatch_en_integer_B	<= 0;
+					dispatch_en_ld_st	<= 0;
+					dispatch_en_mul		<= 0;
+	/*
+		dispatch_opcode		<= dispatch_opcode_reg;
+			dispatch_shfamt		<= dispatch_shfamt_reg;
+			dispatch_imm_ld_st	<= dispatch_imm_ld_st_reg;
+			dispatch_opcode_ld_st	<= dispatch_opcode_reg[0];
+	*/
+	end
+	
 	end 
 end
-/*
-always @(posedge clock or posedge reset ) begin
-	if (reset) begin 
-	rs_data_reg		<= 0;
-	rs_data_valid_reg	<= 0;
-	rs_tag_reg		<= 0;
-	rt_data_reg		<= 0;
-	rt_data_valid_reg	<= 0;
-	rt_tag_reg		<= 0;
-	rd_tag_reg		<= 0;
-	opcode_reg 		<= 0;
-	shfamt_reg 		<= 0;
-	en_ld_st_reg 		<= 0;
-	imm_ld_st_reg 		<= 0;
-	en_mul_reg		<= 0;
-	en_integer_reg		<= 0;	
-	
-	end else begin
 
-	rs_data_reg		<= rs_data;
-	rs_data_valid_reg	<= rs_data_valid;
-	rs_tag_reg		<= rs_tag;
-	rt_data_reg		<= rt_data;
-	rt_data_valid_reg	<= rt_data_valid;
-	rt_tag_reg		<= rt_tag;
-	rd_tag_reg		<= rd_tag;
-	opcode_reg 		<= dispatch_opcode_reg;
-	shfamt_reg 		<= dispatch_shfamt_reg;
-	en_ld_st_reg 		<= dispatch_en_ld_st_reg;
-	imm_ld_st_reg 		<= dispatch_imm_ld_st_reg;
-	en_mul_reg		<= dispatch_en_mul_reg;
-	en_integer_reg		<= dispatch_en_integer_reg;	
-	end
-end
-*/
 regfile regfile(
 	.clock			(clock),
 	.reset			(reset),
