@@ -113,13 +113,13 @@ reg	[  4:  0]	Dispatch_Rd_tag;
 reg	[  4:  0]	Dispatch_Rd_reg;
 reg 	[ 31:  0]	Dispatch_pc;
 reg	[  1:  0]	Dispatch_inst_type;
-/*
-reg 	[  4:  0]	Cdb_rd_tag;
-reg			Cdb_valid;
-reg	[ 31:  0]	Cdb_data;
-reg 			Cdb_branch;
-reg			Cdb_branch_taken;
-*/
+
+reg 	[  4:  0]	Cdb_rd_tag_reg;
+reg			Cdb_valid_reg;
+reg	[ 31:  0]	Cdb_data_reg;
+reg 			Cdb_branch_reg;
+reg			Cdb_branch_taken_reg;
+
 wire	[  4:  0]	Retire_rd_tag;
 wire	[  4:  0]	Retire_rd_reg;
 wire	[ 31:  0]	Retire_data;
@@ -176,6 +176,17 @@ reg new_instruction_reg;
 //assign Dispatch_jmp_addr = (Retire_branch)? Retire_pc : Jmp_branch_address;
 
 always@(posedge clock, posedge reset) begin
+	if (Cdb_valid) begin // TODO: chekar que no haya conclictos con las nuevas entradas al rob
+		Cdb_rd_tag_reg		<= Cdb_rd_tag;
+		Cdb_valid_reg		<= Cdb_valid;
+		Cdb_data_reg		<= Cdb_data;
+		Cdb_branch_reg		<= Cdb_branch;
+		Cdb_branch_taken_reg	<= Cdb_branch_taken;
+	end else begin
+		Cdb_valid_reg		<= 0;
+	end
+end
+always@(posedge clock, posedge reset) begin
   
   if(reset) begin
   
@@ -205,9 +216,10 @@ end
 
 // Nueva instruccion al rob 
 always @(posedge new_instruction or posedge reset) begin
+//always @(posedge clock or posedge reset) begin
 	if (reset) begin
 	end else if (new_instruction) begin
-		$display("INFO : DISPATCHER :  NEW INSTRUCTION TO ROB");
+		`ifdef DEBUG_DISPACHER $display("INFO : DISPATCHER :  NEW INSTRUCTION TO ROB == %h",ifetch_intruction); `endif
 		Dispatch_Rd_tag		<= Tag_Out;
 		if (Dispatch_Type_R) begin
 			Dispatch_Rd_reg		<= ifetch_intruction[15:11];
@@ -226,38 +238,64 @@ always @(posedge new_instruction or posedge reset) begin
 		end else begin
 			Dispatch_pc		<= ifetch_pc_4;
 		end
-		//new_rd_tag_valid	<= 1;
 	end
 end
 
 // retirar 
 always @(posedge clock or posedge reset) begin
 	if (reset) begin
+	RB_Tag_Valid		<= 0;
 	end  else if (Retire_valid) begin 
-	$display (" -------------RETIRE -----");
-	$display (" -------------RETIRE -----");
-	$display (" -------------RETIRE -----");
-	$display (" -------------RETIRE -----");
-	$display (" -------------RETIRE -----");
-	RB_Tag_Valid		<= 1;
-	W_en			<= 1;
-	RB_Tag 			<= Retire_rd_tag;
-	Waddr			<= Retire_rd_reg;
-	Data_In 		<= Retire_data;
+		`ifdef DEBUG_DISPACHER $display (" -------------RETIRE -----"); `endif
+		`ifdef DEBUG_DISPACHER $display (" -------------RETIRE -----RD_TAG =%d",Retire_rd_tag); `endif
+		`ifdef DEBUG_DISPACHER $display (" -------------RETIRE -----RD_REG =%d",Retire_rd_reg); `endif
+		`ifdef DEBUG_DISPACHER $display (" -------------RETIRE -----RD_DATA=%d",Retire_data); `endif
+		`ifdef DEBUG_DISPACHER $display (" -------------RETIRE -----"); `endif
+		RB_Tag_Valid		<= 1;
+		W_en			<= 1;
+		RB_Tag 			<= Retire_rd_tag;
+		Waddr			<= Retire_rd_reg;
+		Data_In 		<= Retire_data;
+		// TODO: retirar el branch:
+		//Retire_pc;
+		//Retire_branch;
+		//Retire_branch_taken;
+		//Retire_store_ready;
+		
+	end else begin
+		RB_Tag_Valid		<= 0;
+		Waddr			<= 0;
+		Data_In 		<= 0;
+		//Rd_en			<= 0;
+		W_en			<= 0;
+	end
+end 
+/*
+always @(*) begin
+	if (Retire_valid) begin 
+	`ifdef DEBUG_DISPACHER $display (" -------------RETIRE -----%d",$time); `endif
+	`ifdef DEBUG_DISPACHER $display (" -------------RETIRE -----RD_TAG  =%d",Retire_rd_tag); `endif
+	`ifdef DEBUG_DISPACHER $display (" -------------RETIRE -----RD_REG  =%d",Retire_rd_reg); `endif
+	`ifdef DEBUG_DISPACHER $display (" -------------RETIRE -----RD_DATA =%d",Retire_data); `endif
+	`ifdef DEBUG_DISPACHER $display (" -------------RETIRE -----%d",$time); `endif
+	RB_Tag_Valid		= 1;
+	W_en			= 1;
+	RB_Tag 			= Retire_rd_tag;
+	Waddr			= Retire_rd_reg;
+	Data_In 		= Retire_data;
 	// TODO: retirar el branch:
 	//Retire_pc;
 	//Retire_branch;
 	//Retire_branch_taken;
 	//Retire_store_ready;
-	
 	end else begin
-	Waddr			<= 0;
-	Data_In 		<= 0;
-	//Rd_en			<= 0;
-	W_en			<= 0;
+	Waddr			= 0;
+	Data_In 		= 0;
+	//Rd_en			= 0;
+	W_en			= 0;
 	end
 end 
-
+*/
 always @(posedge clock or posedge reset) begin
 	if (reset) begin
 		new_instruction_reg <= 1; 
@@ -274,20 +312,32 @@ always @(posedge clock or posedge reset) begin
 		ifetch_pc_4_reg <= ifetch_pc_4;
 		if (ifetch_pc_4_reg != ifetch_pc_4) begin
 			new_instruction <= 1;
-			$display("----------------------------------------------------------------------------------");
-			$display(" INFO : DISPATCHER : New Instruction ::: %h ::: ", ifetch_intruction);
-			$display("----------------------------------------------------------------------------------");
+			`ifdef DEBUG_DISPACHER $display("----------------------------------------------------------------------------------"); `endif
+			`ifdef DEBUG_DISPACHER $display(" INFO : DISPATCHER : New Instruction ::: %h ::: ", ifetch_intruction); `endif
+			`ifdef DEBUG_DISPACHER $display("----------------------------------------------------------------------------------"); `endif
 		end else 
 			new_instruction <= 0;
 	end
 end
-
+/*
+always @(posedge clock or posedge reset) begin
+	if (reset) begin
+	new_rd_tag 		<= 0;
+	new_rd_tag_valid	<= 0; 
+	end else begin
+	if (new_instruction || new_instruction_reg) begin
+	new_rd_tag 		<= !new_rd_tag;
+	new_rd_tag_valid	<= !new_rd_tag_valid; 
+	end
+	end
+end
+*/
 always @(*) begin
  	Rs_reg_ren 	= new_instruction;
  	Rt_reg_ren 	= new_instruction;
 	increment	= new_instruction;
-	new_rd_tag 	= (reset) ? 0 :new_instruction;
-	new_rd_tag_valid	=  (reset)? 0: new_instruction;
+	new_rd_tag 		= (reset) ? 0 : new_instruction ;
+	new_rd_tag_valid	= (reset) ? 0 : new_instruction ;
 	if(Dispatch_Type_R && !issueque_integer_full_A && !issueque_integer_full_B && !issueque_full_ld_st && !issueque_mul_full)	
 		Rd_en		= new_instruction;
 	else 
@@ -309,50 +359,66 @@ always @(posedge clock or posedge reset) begin
 	//if (new_instruction_reg && !issueque_integer_full_A && !issueque_integer_full_B && !issueque_full_ld_st && !issueque_mul_full)	
 	if (!issueque_integer_full_A && !issueque_integer_full_B && !issueque_full_ld_st && !issueque_mul_full)	
 		Dispatch_ren	<= new_instruction_reg;
+	else 
+		Dispatch_ren	<= 0;
 	/*else 
 		Dispatch_ren	<= 0;
 */
 	end
 end
-/*
-always @(posedge new_instruction) begin
-	// Read Rs and Rt 
-	$display ("INFO : DISPATCHER : Instruction : %h Status: Reading Registers: Rs %d and Rt %d",ifetch_intruction,ifetch_intruction [25:21],ifetch_intruction [20:16]);
-	Rs_addr 	<= ifetch_intruction [25:21]; // Rs; 
-	Rt_addr 	<= ifetch_intruction [20:16]; // Rt;
-	rd_tag 		<= Tag_Out;
-end
-*/
+
 always @(posedge new_instruction or posedge reset) begin
   
   if(reset) begin
      Rs_addr 	<= 0;
      Rt_addr 	<= 0;
-     rd_tag 		<= 0;
+     rd_tag 	<= 0;
   end
   else begin  
 	   // Read Rs and Rt 
-	   $display ("INFO : DISPATCHER : Instruction : %h Status: Reading Registers: Rs %d and Rt %d",ifetch_intruction,ifetch_intruction [25:21],ifetch_intruction [20:16]);
+	   `ifdef DEBUG_DISPACHER $display ("INFO : DISPATCHER : Instruction : %h Status: Reading Registers: Rs %d and Rt %d",ifetch_intruction,ifetch_intruction [25:21],ifetch_intruction [20:16]); `endif
   	   Rs_addr 	<= ifetch_intruction [25:21]; // Rs; 
 	   Rt_addr 	<= ifetch_intruction [20:16]; // Rt;
-	   rd_tag 		<= Tag_Out;
+	   rd_tag 	<= Tag_Out;
 	end
 end
 
-//always @(posedge new_instruction or posedge new_instruction_reg or posedge reset) begin
 always @(*) begin
-/*
- if(reset) begin
-     rs_data <= 0;
-     rs_tag  <= 0;
-     rs_data_valid <= 0;
-     rt_data <= 0;
-     rt_tag  <= 0;
-     rt_data_valid <= 0;  
- end
- else begin
-*/
 //if (new_instruction_reg || new_instruction) begin
+if (!Rs_token[0] && !Rs_Data_valid) begin //el dato no esta en el rob y no tiene un tag
+	rs_data = RegFile_Rs_reg;
+	rs_tag  = 0;
+	rs_data_valid =1;
+end else begin
+	if (Rs_token[0])   begin //El Tag es valido
+		rs_tag  = Rs_token[5:1];
+		rs_data_valid =0;
+	end
+	if (Rs_Data_valid) begin // El dato especulativo es valido
+		rs_data = Rs_Data_spec;
+		rs_data_valid =1;
+	end
+end
+
+if (!Rt_token[0] && !Rt_Data_valid) begin //el dato no esta en el rob y no tiene un tag
+	if (Dispatch_Type_I) begin
+		rt_data = dispatch_imm_ld_st_reg; //ifetch_intruction [15:0];
+	end else begin
+		rt_data = RegFile_Rt_reg;
+		rt_tag  = 0;
+		rt_data_valid =1;
+	end
+end else begin
+	if (Rt_token[0])   begin //El Tag es valido
+		rt_tag  = Rt_token[5:1];
+		rt_data_valid =0;
+	end
+	if (Rt_Data_valid) begin // El dato especulativo es valido
+		rt_data = Rt_Data_spec;
+		rt_data_valid =1;
+	end
+end
+/*
 	if (Rs_Data_valid) begin
 		rs_data = Rs_Data_spec;
 		rs_tag  = Rs_token[5:1];
@@ -377,8 +443,7 @@ always @(*) begin
 			rt_data_valid =1;
 		end
 	end
-	
-// end
+*/
 //end
 end	
 /////////////////
@@ -411,14 +476,14 @@ always @(posedge new_instruction or posedge new_instruction_reg) begin
 end
 */
 always @* begin
-		$display ("INFO : DISPATCHER : -------- Sending information to queue I ------------");	
-		$display ("---> rs_data       %d",rs_data);
-		$display ("---> rs_data_valid %d",rs_data_valid);
-		$display ("---> rs_tag        %d",rs_tag);
-		$display ("---> rt_data       %d",rt_data);
-		$display ("---> rt_data_valid %d",rt_data_valid);
-		$display ("---> rt_tag        %d",rt_tag);
-		$display ("---> rd_tag        %d",rd_tag);
+		`ifdef DEBUG_DISPACHER $display ("INFO : DISPATCHER : -------- Sending information to queue I ------------"); `endif	
+		`ifdef DEBUG_DISPACHER $display ("---> rs_data       %d",rs_data); `endif
+		`ifdef DEBUG_DISPACHER $display ("---> rs_data_valid %d",rs_data_valid); `endif
+		`ifdef DEBUG_DISPACHER $display ("---> rs_tag        %d",rs_tag); `endif
+		`ifdef DEBUG_DISPACHER $display ("---> rt_data       %d",rt_data); `endif
+		`ifdef DEBUG_DISPACHER $display ("---> rt_data_valid %d",rt_data_valid); `endif
+		`ifdef DEBUG_DISPACHER $display ("---> rt_tag        %d",rt_tag); `endif
+		`ifdef DEBUG_DISPACHER $display ("---> rd_tag        %d",rd_tag); `endif
 		
 		dispatch_rs_data 	= rs_data;
 		dispatch_rs_data_valid	= rs_data_valid;
@@ -438,7 +503,8 @@ always @ (posedge clock or posedge reset) begin
 	if (reset) begin
 		last <= 0;
 	end else begin 
-	if (new_instruction_reg) begin
+	//if (new_instruction_reg) begin
+	if (new_instruction) begin
 		// - Señales especificas para la cola de ejecución de enteros.
 		//if (!issueque_integer_full_A && !issueque_integer_full_B) begin
 			//dispatch_en_integer	<= dispatch_en_integer_reg;
@@ -549,11 +615,13 @@ rob rob (
 	.Dispatch_Rd_reg	(Dispatch_Rd_reg),
 	.Dispatch_pc		(Dispatch_pc),
 	.Dispatch_inst_type	(Dispatch_inst_type),
+
 	.Cdb_rd_tag		(Cdb_rd_tag),
 	.Cdb_valid		(Cdb_valid),
 	.Cdb_data		(Cdb_data),
 	.Cdb_branch		(Cdb_branch),
 	.Cdb_branch_taken	(Cdb_branch_taken),
+	
 	.Retire_rd_tag		(Retire_rd_tag),
 	.Retire_rd_reg		(Retire_rd_reg),
 	.Retire_data		(Retire_data),
@@ -563,7 +631,6 @@ rob rob (
 	.Retire_store_ready	(Retire_store_ready),
 	.Retire_valid		(Retire_valid),
 	.flush_flag		(flush)
-	/// TODO: el flush debe salir del rob +
 
 	);
 
