@@ -11,7 +11,7 @@ module testbench;
    wire 	[4:0] 	Tag_Out;
    wire 		tagFifo_full;
    wire 		tagFifo_empty;
-
+	reg increment;
 integer i;
 
 tagfifo tagfifo(
@@ -22,7 +22,8 @@ tagfifo tagfifo(
    .Rd_en(Rd_en),
    .Tag_Out(Tag_Out),
    .tagFifo_full(tagFifo_full),
-   .tagFifo_empty(tagFifo_empty)
+   .tagFifo_empty(tagFifo_empty),
+   .increment(increment)
 );
 
 always begin
@@ -33,8 +34,9 @@ end
 initial 
 begin
 	clock=0;
-	reset=0;
-#10	reset=1;
+	reset=1;
+#10	reset=0;
+increment =1;
 /*
 llenar la fifo:
 	for (i=0;i<33;i=i+1)

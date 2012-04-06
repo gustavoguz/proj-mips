@@ -75,10 +75,11 @@ begin
 			rp <= {3'b000,Jmp_branch_address[1:0]};  
 			Pc_out <= Jmp_branch_address;
 		end else begin
-			if (Rd_en & Dout_valid)begin
+			//if (Rd_en & Dout_valid)begin
+			if (Rd_en)begin
 				rp <= rp + 1'b1;
 				Pc_out <= Pc_out + 1;
-			  BypassC <= 1'b0;
+			  	BypassC <= 1'b0;
 			end			  
 		end
 	end
