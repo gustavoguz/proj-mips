@@ -75,8 +75,8 @@ module IssueQueueLS (
       //integer i;
       // Match CDB_TAG vs RS/RT TAG logic
       for(i = 0; i<N_QUEUE; i = i+1) begin
-         queue_rt_match[i] = (CDB_Valid) ?  (CDB_Tag == rt_tag_reg[i]) : 1'b0;
-         queue_rs_match[i] = (CDB_Valid) ?  (CDB_Tag == rs_tag_reg[i]) : 1'b0;
+         queue_rt_match[i] = (CDB_Valid & (~rt_val_reg[i])) ?  (CDB_Tag == rt_tag_reg[i]) : 1'b0;
+         queue_rs_match[i] = (CDB_Valid & (~rs_val_reg[i])) ?  (CDB_Tag == rs_tag_reg[i]) : 1'b0;
       end
      
       for(i = 0; i<N_QUEUE; i = i+1) begin
@@ -190,12 +190,16 @@ module IssueQueueLS (
                rs_tag_reg[i] <= (queue_add) ? Dispatch_Rs_Tag : rs_tag_reg[i];
                rt_tag_reg[i] <= (queue_add) ? Dispatch_Rt_Tag : rt_tag_reg[i];
                
-               address_reg[i] <= (queue_rs_match[i]) ? (CDB_Data + {{16{imm_reg[i][15]}},imm_reg[i]}) : 
+               address_reg[i] <= (Dispatch_Rs_Data_Val & queue_add) ?  (Dispatch_Rs_Data + {{16{Dispatch_Imm[15]}},Dispatch_Imm}) :
+                                 (queue_rs_match[i]) ? (CDB_Data + {{16{imm_reg[i][15]}},imm_reg[i]}) : 
                                  (queue_add)  ?  (Dispatch_Rs_Data + {{16{Dispatch_Imm[15]}},Dispatch_Imm}) : address_reg[i]; 
 
-               rs_data_reg[i] <= (queue_rs_match[i]) ? CDB_Data :  (queue_add)  ? Dispatch_Rs_Data     : rs_data_reg[i];
+               rs_data_reg[i] <= (Dispatch_Rs_Data_Val & queue_add) ?  Dispatch_Rs_Data : (queue_rs_match[i]) ? CDB_Data :  (queue_add)  ? Dispatch_Rs_Data     : rs_data_reg[i];
+               //rs_data_reg[i] <= (queue_rs_match[i]) ? CDB_Data :  (queue_add)  ? Dispatch_Rs_Data     : rs_data_reg[i];
                rs_val_reg [i] <= (queue_rs_match[i]) ? 1'b1     :  (queue_add)  ? Dispatch_Rs_Data_Val : rs_val_reg [i];
-               rt_data_reg[i] <= (queue_rt_match[i]) ? CDB_Data :  (queue_add)  ? Dispatch_Rt_Data     : rt_data_reg[i];
+               
+               rt_data_reg[i] <= (Dispatch_Rt_Data_Val & queue_add) ?  Dispatch_Rt_Data : (queue_rt_match[i]) ? CDB_Data :  (queue_add)  ? Dispatch_Rt_Data     : rt_data_reg[i];
+               //rt_data_reg[i] <= (queue_rt_match[i]) ? CDB_Data :  (queue_add)  ? Dispatch_Rt_Data     : rt_data_reg[i];
                rt_val_reg [i] <= (queue_rt_match[i]) ? 1'b1     :  (queue_add)  ? Dispatch_Rt_Data_Val : rt_val_reg [i];
 
                valid_reg [i] <=  valid_logic[i];
@@ -208,12 +212,18 @@ module IssueQueueLS (
                rd_tag_reg[i] <= (queue_shift[i+1]) ? rd_tag_reg[i+1] : rd_tag_reg[i];
                rs_tag_reg[i] <= (queue_shift[i+1]) ? rs_tag_reg[i+1] : rs_tag_reg[i];
                rt_tag_reg[i] <= (queue_shift[i+1]) ? rt_tag_reg[i+1] : rt_tag_reg[i];
-               
-               address_reg[i] <= (queue_rs_match[i]) ? (CDB_Data + {{16{imm_reg[i][15]}},imm_reg[i]}) : (queue_shift[i+1])  ? address_reg[i+1] : address_reg[i];
+                              
+               address_reg[i] <= (rs_val_reg [i+1] & queue_shift[i+1]) ? address_reg[i+1] : 
+                                 (queue_rs_match[i]) ? (CDB_Data + {{16{imm_reg[i][15]}},imm_reg[i]}) : 
+                                 (queue_shift[i+1])  ? address_reg[i+1] : address_reg[i];
+               //address_reg[i] <= (queue_rs_match[i]) ? (CDB_Data + {{16{imm_reg[i][15]}},imm_reg[i]}) : (queue_shift[i+1])  ? address_reg[i+1] : address_reg[i];
 
-               rs_data_reg[i] <= (queue_rs_match[i]) ? CDB_Data :  (queue_shift[i+1])  ? rs_data_reg[i+1] : rs_data_reg[i];
+               rs_data_reg[i] <= (rs_val_reg [i+1] & queue_shift[i+1]) ? rs_data_reg[i+1] : (queue_rs_match[i]) ? CDB_Data :  (queue_shift[i+1])  ? rs_data_reg[i+1] : rs_data_reg[i];
+               //rs_data_reg[i] <= (queue_rs_match[i]) ? CDB_Data :  (queue_shift[i+1])  ? rs_data_reg[i+1] : rs_data_reg[i];
                rs_val_reg [i] <= (queue_rs_match[i]) ? 1'b1     :  (queue_shift[i+1])  ? rs_val_reg [i+1] : rs_val_reg [i];
-               rt_data_reg[i] <= (queue_rt_match[i]) ? CDB_Data :  (queue_shift[i+1])  ? rt_data_reg[i+1] : rt_data_reg[i];
+               
+               rt_data_reg[i] <= (rt_val_reg [i+1] & queue_shift[i+1]) ? rt_data_reg[i+1] : (queue_rt_match[i]) ? CDB_Data :  (queue_shift[i+1])  ? rt_data_reg[i+1] : rt_data_reg[i];
+               //rt_data_reg[i] <= (queue_rt_match[i]) ? CDB_Data :  (queue_shift[i+1])  ? rt_data_reg[i+1] : rt_data_reg[i];
                rt_val_reg [i] <= (queue_rt_match[i]) ? 1'b1     :  (queue_shift[i+1])  ? rt_val_reg [i+1] : rt_val_reg [i];
 
                valid_reg [i] <=  valid_logic[i];
