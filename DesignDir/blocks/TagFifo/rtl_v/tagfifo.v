@@ -29,7 +29,7 @@ module tagfifo(
 );
 
 parameter DSIZE = 5;
-parameter ASIZE = 6; // ASIZE = Max_number -1
+parameter ASIZE = 5; // ASIZE = Max_number -1
 
 output 	[DSIZE-1:0] 	Tag_Out;
 output 			tagFifo_full;
@@ -44,14 +44,14 @@ reg [ASIZE:0] wptr;
 reg [ASIZE:0] rptr;
 
 parameter MEMDEPTH = 1<<ASIZE;
-parameter MEMSIZE = 1<<ASIZE-1;
+parameter MEMSIZE = (1<<ASIZE);
 
 reg [DSIZE-1:0] ex_mem [0:MEMDEPTH-1];
 integer i;
 
 always @(posedge clock or posedge reset) begin
         if (reset) begin
-		       wptr <= 6'b10_0000;
+		       wptr <= 6'b100000;
 		       for (i=0;i<MEMSIZE;i=i+1) begin
 			        ex_mem[i]<=i;
 		       end
@@ -73,7 +73,8 @@ end
 
 assign Tag_Out = ex_mem[rptr[ASIZE-1:0]];
 assign tagFifo_empty = (rptr == wptr);
-assign tagFifo_full = ({~wptr[ASIZE-1], wptr[ASIZE-2:0]} == rptr);
+//assign tagFifo_full = ({~wptr[ASIZE-1], wptr[ASIZE-2:0]} == rptr);
+assign tagFifo_full = ({~wptr[ASIZE], wptr[ASIZE-1:0]} == rptr);
 
 
 endmodule
