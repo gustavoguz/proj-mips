@@ -64,6 +64,9 @@ module IssueUnit(
    reg [ 1:0] LRU_reg;
    reg [ 3:0] CDB_Slot_reg;
    
+   // Mult Tag Registers
+   reg [ 4:0] mult_tag_reg [0:2];
+   
    // CDB Slot Sequential Logic
    always@(posedge Clk, posedge Rst) begin
    
@@ -95,6 +98,22 @@ module IssueUnit(
    
     // Mult_Done logic
    assign mult_done = CDB_Slot_reg[1];
+   
+   // Mult_Tag Sequential Shift
+   always@(posedge Clk, posedge Rst) begin
+   
+      if(Rst) begin
+         mult_tag_reg [0] <= 5'b00000;  
+         mult_tag_reg [1] <= 5'b00000;  
+         mult_tag_reg [2] <= 5'b00000;   
+      end 
+      else begin
+         mult_tag_reg [0] <= MultIssue_Tag;  
+         mult_tag_reg [1] <= mult_tag_reg [0];  
+         mult_tag_reg [2] <= mult_tag_reg [1]; 
+      end  
+     
+   end
    
    // Issue Outputs to Queues Logic
    always@(*) begin 
@@ -307,7 +326,7 @@ module IssueUnit(
          
          4'b1000: begin
             $display("INT_MULT %0b at %0t", Issue_Mult, $time);
-            CDB_Tag_reg          <= MultIssue_Tag;
+            CDB_Tag_reg          <= mult_tag_reg [2];
             CDB_Data_reg         <= MultIssue_Result;
             CDB_Valid_reg        <= 1'b1;
             CDB_Branch_reg       <= 1'b0;
