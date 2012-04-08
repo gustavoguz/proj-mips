@@ -65,6 +65,7 @@ wire 		Token_valid_rt;
 
 //Dispatch escribe nueva entrada en el ROB
 reg [72:0] 	NewEntryData;
+reg [72:0] 	NewEntryData_update;
 reg [72:0] 	Reg_File_Tmp_data_Rs_temp;
 reg 		NewEntry;
 reg 		Update_entry;
@@ -78,6 +79,7 @@ wire [31:0]	Wen1_rst;
 wire [ 4:0] 	OrderQueue_data;
 reg  [ 4:0] 	OrderQueue_data_temp;
 reg  [ 4:0] 	AddrRFT;
+reg  [ 4:0] 	AddrRFT_update;
 reg  [ 4:0] 	Retire_rd_tag_reg;
 reg 		Retire_valid_reg;
 reg 		increment;
@@ -102,6 +104,11 @@ reg 		RequestFlush_reg;
 reg 		OrderQueueNew_write_reg; 
 reg		flush;
 reg		flush_reg;
+reg [4:0]	Rs_reg_reg_temp;
+reg		invalidate_rft;
+reg [4:0]	inv_addr_rft;
+wire [72:0]	Data_out3;
+reg  [4:0]	retire_addr;
 
 always @ * begin 
 	if ( Rs_reg_ren ) begin 
@@ -127,23 +134,42 @@ always @* begin
 	end
 end
 
-always @(Cdb_valid or Cdb_branch or Cdb_branch_taken or RequestFlush_reg) begin
-	if (Cdb_branch_taken && Cdb_valid) begin
+//always @(Cdb_valid or Cdb_branch or Cdb_branch_taken or RequestFlush_reg) begin
+always @(*) begin
+/*	if (Cdb_branch_taken && Cdb_valid) begin
 		`ifdef DEBUG_ROB $display ("INFO : ROB : Request Flush"); `endif
 		RequestFlush	= 1;
 	end else begin
 		RequestFlush	= RequestFlush_reg;
 	end
+*/
+	RequestFlush= (Cdb_branch_taken & Cdb_valid);
 end
 
-always @(Cdb_valid or Cdb_data or Cdb_rd_tag or Cdb_branch or Cdb_branch_taken or RequestUpdate_reg) begin
-	if (Cdb_valid && (!Cdb_branch_taken)) begin 
+//always @(Cdb_valid or Cdb_data or Cdb_rd_tag or Cdb_branch or Cdb_branch_taken or RequestUpdate_reg) begin
+always @(*) begin
+/*	if (Cdb_valid && (!Cdb_branch_taken)) begin 
 		`ifdef DEBUG_ROB $display ("INFO : ROB : Request Update R"); `endif
 		RequestUpdate 	= 1;
 		// TODO : Mecanismo para invalidar todo el register file temp si Cdb_branch_taken = 1, puede suceder el update al mismo tiempo que el flush
 	end else begin
 		RequestUpdate 	= RequestUpdate_reg;
-	end
+	end*/
+		RequestUpdate 	= (!Cdb_branch_taken) ? Cdb_valid:0;
+		if (RequestUpdate) begin 
+			`ifdef DEBUG_ROB $display("INFO : ROB : Update_entry %d %d", Cdb_rd_tag,Cdb_data); `endif
+ 			// solo se hace el update para Cdb_data,Cdb_valid
+			//Wen_rst 		= 0; // RST : write enable
+			//NewEntry		= 0; // Register file temp : write enable
+			Update_entry 		= 1; // Register file temp : update antry enable
+			//OrderQueueNew_write  	= 0; // Order queue : write enable
+			RequestUpdate_reg 	= 0;
+			//RequestAddNew_reg 	= 0;
+			AddrRFT_update		= Cdb_rd_tag;	
+			NewEntryData_update	= {Dispatch_Rd_reg,Dispatch_pc,Dispatch_inst_type,Cdb_data,Cdb_valid,1'b1};
+		end
+		else 
+			Update_entry 		= 0; // Register file temp : update antry enable
 end
 
 always @* begin
@@ -152,32 +178,189 @@ always @* begin
 	flush		= flush_reg;
 end
 assign flush_flag  	=flush;
-// -------------------------     Control del ROB     ---------------------------------
 
+/*
+
+always @* begin
+if (!OrderQueueEmpty) begin
+				OrderQueueNew_read 	= 1;
+				retire_addr		= OrderQueue_data;
+				//OrderQueue_data_temp 	<= OrderQueue_data;
+				OrderQueue_data_temp = OrderQueue_data;	
+				if (Data_out3[1] && Data_out3 [0]) begin //la instrccion tiene valres validos
+			//		if (Data_out3 [72:68] == Data_out3 [72:68]) begin ///NOTA investiga <------------
+						`ifdef DEBUG_ROB $display("INFO : ROB : Retired tag %d ", OrderQueue_data_temp); `endif
+						`ifdef DEBUG_ROB $display("INFO : ROB : rd_tag %d", OrderQueue_data_temp); `endif
+						`ifdef DEBUG_ROB $display("INFO : ROB : rd_reg %d", Data_out3[72:68]); `endif
+						`ifdef DEBUG_ROB $display("INFO : ROB :  data %d", Data_out3[33: 2]); `endif
+						Retire_rd_tag 		= OrderQueue_data;
+						Retire_rd_reg 		= Data_out3[72:68];
+						Retire_data		= Data_out3[33: 2];
+						Retire_pc		= Data_out3[67:36];
+						Retire_rd_tag_reg 	= Data_out3[72:68];
+						Retire_branch		= Cdb_branch;
+						Retire_valid 		= 1'b1;
+						Retire_branch_taken 	= Cdb_branch_taken;
+						Retire_store_ready  	= (Data_out3[35:34]==2'b10)? 1: 0;
+						Retire_valid_reg  	= 1; 
+						RequestRetire		= 1;	
+						// TODO : invalidate register at regfiletemp 
+						
+						OrderQueueNew_write  	= 0; // Order queue : write enable
+						increment 		= !increment;
+						///INVALIDAR el registro :
+						inv_addr_rft	= Data_out3 [72:68];
+						invalidate_rft	= 1;
+				end else begin 
+					invalidate_rft		= 0;	
+					increment 	= 1;
+					RequestRetire	= 0;	
+					Retire_valid_reg  	= 0; 
+					Retire_valid 		= 1'b0;
+				end
+		
+			end else begin
+				invalidate_rft		= 0;	
+				increment 	= 1;
+				OrderQueueNew_read 	= 0;
+				RequestRetire		= 0;	
+				Retire_valid_reg  	= 0; 
+				Retire_valid 	= 1'b0;
+			end
+end
+
+*/
+// -------------------------     Control del ROB     ---------------------------------
+always @* begin
+			Rt_reg_reg		= Rt_reg;
+			Rt_token 		= { Token_valid_rt,Token_tag_rt  };
+			Rt_Data_spec  		= Reg_File_Tmp_data_Rt [33:2];
+			Rt_Data_valid		= Reg_File_Tmp_data_Rt [1];
+			//RequestQueryRt_reg	= 0;
+			//OrderQueueNew_write  	= 0; // Order queue : write enable
+			Rs_reg_reg		= Rs_reg;
+			Rs_token 		= { Token_valid_rs, Token_tag_rs} ;
+			Rs_Data_spec  		= Reg_File_Tmp_data_Rs [33:2];
+			Rs_Data_valid 		= Reg_File_Tmp_data_Rs [1];
+			//RequestQueryRs_reg	= 0;
+			//OrderQueueNew_write  	= 0; // Order queue : write enable
+end
+always @(posedge clock or posedge reset) begin
+	if(reset)
+		increment 		<= 0;
+	else if (Data_out3[1] & Data_out3 [0])
+	increment 		<= !increment;
+	else 
+	increment 		<= 1;
+end
+always @* begin
+		if (!OrderQueueEmpty) begin
+				OrderQueueNew_read 	= 1;
+				OrderQueue_data_temp = OrderQueue_data;	
+				if (Data_out3[1] & Data_out3 [0]) begin //la instrccion tiene valres validos
+						`ifdef DEBUG_ROB $display("INFO : ROB : Retired tag %d ", OrderQueue_data); `endif
+						`ifdef DEBUG_ROB $display("INFO : ROB : rd_tag %d", OrderQueue_data); `endif
+						`ifdef DEBUG_ROB $display("INFO : ROB : rd_reg %d", Data_out3[72:68]); `endif
+						`ifdef DEBUG_ROB $display("INFO : ROB : data %d", Data_out3); `endif
+						Retire_rd_tag 		= OrderQueue_data;
+						Retire_rd_reg 		= Data_out3[72:68];
+						Retire_data		= Data_out3[33: 2];
+						Retire_pc		= Data_out3[67:36];
+						//Retire_rd_tag_reg 	= Data_out3[72:68];
+						Retire_rd_tag_reg 	= OrderQueue_data;
+						Retire_branch		= Cdb_branch;
+						Retire_valid 		= 1'b1;
+						Retire_branch_taken 	= Cdb_branch_taken;
+						Retire_store_ready  	= (Data_out3[35:34]==2'b10)? 1: 0;
+						Retire_valid_reg  	= 1; 
+						RequestRetire		= 1;	
+						// TODO : invalidate register at regfiletemp 
+						
+						//OrderQueueNew_write  	= 0; // Order queue : write enable
+						//increment 		= !increment;
+						///INVALIDAR el registro :
+						//inv_addr_rft	= Data_out3 [72:68];
+						inv_addr_rft	= OrderQueue_data;
+						invalidate_rft	= 1;
+				end else begin 
+					invalidate_rft		= 0;	
+				//	increment 	= 1;
+					RequestRetire	= 0;	
+					Retire_valid_reg  	= 0; 
+					Retire_valid 		= 1'b0;
+					OrderQueueNew_read 	= 0;
+				end
+		
+			end else begin
+				invalidate_rft	= 0;	
+				//increment 	= 1;
+				OrderQueueNew_read 	= 0;
+				RequestRetire		= 0;	
+				Retire_valid_reg  	= 0; 
+				Retire_valid 		= 1'b0;
+			end
+
+end
+
+always @* begin
+	retire_addr		= OrderQueue_data;
+end
 always @ (posedge clock or posedge reset) begin
 	if (reset) begin
-	increment	<= 1;
+	//increment	<= 1;
 	flush_reg	<= 0;
+
 	Retire_rd_tag 		<= 0;
 	Retire_rd_reg 		<= 0;
 	Retire_data		<= 0;
 	Retire_pc		<= 0;
 	Retire_rd_tag_reg 	<= 0;
 	Retire_branch		<= 0;
+
 	Retire_valid 		<= 1'b0;
+
 	Retire_branch_taken 	<= 0;
 	Retire_store_ready  	<= 0;
+
 	Retire_valid_reg  	<= 1; 
 	RequestAddNew_reg 	<= 0;
+  	
+	Rt_reg_reg           <= 0;
+  	Rt_token             <= 0;
+
+	Rt_Data_spec         <= 0;
+	Rt_Data_valid        <= 0;
+	RequestQueryRt_reg   <= 0;
+
+	Rs_reg_reg           <= 0;
+	Rs_token             <= 0;
+	Rs_Data_spec         <= 0;
+	Rs_Data_valid        <= 0;
+
+	RequestQueryRs_reg   <= 0;
+	OrderQueueNew_read   <= 0;
+	OrderQueue_data_temp <= 0;
+	RequestFlush_reg     <= 0;
+	Wen_rst              <= 0;
+	NewEntry             <= 0;
+	Update_entry         <= 0;
+	RequestUpdate_reg    <= 0;
+	AddrRFT              <= 0;
+	NewEntryData         <= 0;
+	OrderQueueDataIn     <= 0;
+	
+	invalidate_rft		<= 0;
 	end else begin
 		OrderQueueNew_write 	<= 0; // Order queue : write enable
 		RequestAddNew_reg 	<= 0;
+		//increment 		<= 1;
+		invalidate_rft		<= 0;	
 		if (RequestQueryRt) begin
-			Rt_reg_reg		<= Rt_reg;
-			Rt_token 		<= { Token_tag_rt , Token_valid_rt };
+	/*		Rt_reg_reg		<= Rt_reg;
+			Rt_token 		<= { Token_valid_rt,Token_tag_rt  };
 			Rt_Data_spec  		<= Reg_File_Tmp_data_Rt [33:2];
 			Rt_Data_valid		<= Reg_File_Tmp_data_Rt [1];
-			RequestQueryRt_reg	<= 0;
+		*/	RequestQueryRt_reg	<= 0;
 			OrderQueueNew_write  	<= 0; // Order queue : write enable
 			`ifdef DEBUG_ROB $display("INFO : ROB : Request Query Rt = %d",Rt_reg); `endif
 			`ifdef DEBUG_ROB_TB $display ("------------------------------------------"); `endif
@@ -190,11 +373,11 @@ always @ (posedge clock or posedge reset) begin
 		end
 		
 		if (RequestQueryRs) begin
-			Rs_reg_reg		<= Rs_reg;
-			Rs_token 		<= { Token_tag_rs , Token_valid_rs };
+		/*	Rs_reg_reg		<= Rs_reg;
+			Rs_token 		<= { Token_valid_rs, Token_tag_rs} ;
 			Rs_Data_spec  		<= Reg_File_Tmp_data_Rs [33:2];
 			Rs_Data_valid 		<= Reg_File_Tmp_data_Rs [1];
-			RequestQueryRs_reg	<= 0;
+		*/	RequestQueryRs_reg	<= 0;
 			OrderQueueNew_write  	<= 0; // Order queue : write enable
 			`ifdef DEBUG_ROB $display("INFO : ROB : Request Query Rs = %d",Rs_reg); `endif
 			`ifdef DEBUG_ROB_TB $display ("------------------------------------------"); `endif
@@ -205,40 +388,70 @@ always @ (posedge clock or posedge reset) begin
 			`ifdef DEBUG_ROB_TB $display ("Rs_Data_valid %d",Reg_File_Tmp_data_Rs [1]); `endif
 			`ifdef DEBUG_ROB_TB $display ("------------------------------------------"); `endif
 		end 
+		///////////////////////////////////////////////////////////////	
+		//if (!RequestQueryRs && !RequestQueryRt && !RequestAddNew) begin
+		//if (!RequestQueryRs ) begin
 
-		if (!RequestQueryRs && !RequestQueryRt && !RequestAddNew) begin
-			if (!OrderQueueEmpty) begin
+/////////////////////////////////////////////////////////////////////////////////
+/*		if (!OrderQueueEmpty) begin
 				OrderQueueNew_read 	<= 1;
-				Rs_reg_reg 		<= OrderQueue_data;
-				OrderQueue_data_temp 	<= OrderQueue_data;
-
-				if (Reg_File_Tmp_data_Rs[1] && Reg_File_Tmp_data_Rs [0]) begin 
-					if (OrderQueue_data_temp    == Reg_File_Tmp_data_Rs [72:68]) begin
+			//	retire_addr		<= OrderQueue_data;
+				//OrderQueue_data_temp 	<= OrderQueue_data;
+				OrderQueue_data_temp <= OrderQueue_data;	
+				if (Data_out3[1] && Data_out3 [0]) begin //la instrccion tiene valres validos
+			//		if (Data_out3 [72:68] == Data_out3 [72:68]) begin ///NOTA investiga <------------
 						`ifdef DEBUG_ROB $display("INFO : ROB : Retired tag %d ", OrderQueue_data_temp); `endif
+						`ifdef DEBUG_ROB $display("INFO : ROB : rd_tag %d", OrderQueue_data_temp); `endif
+						`ifdef DEBUG_ROB $display("INFO : ROB : rd_reg %d", Data_out3[72:68]); `endif
+						`ifdef DEBUG_ROB $display("INFO : ROB :  data %d", Data_out3[33: 2]); `endif
 						Retire_rd_tag 		<= OrderQueue_data_temp;
-						Retire_rd_reg 		<= Reg_File_Tmp_data_Rs[72:68];
-						Retire_data		<= Reg_File_Tmp_data_Rs[33: 2];
-						Retire_pc		<= Reg_File_Tmp_data_Rs[67:36];
-						Retire_rd_tag_reg 	<= Reg_File_Tmp_data_Rs[72:68];
+						Retire_rd_reg 		<= Data_out3[72:68];
+						Retire_data		<= Data_out3[33: 2];
+						Retire_pc		<= Data_out3[67:36];
+						Retire_rd_tag_reg 	<= Data_out3[72:68];
 						Retire_branch		<= Cdb_branch;
 						Retire_valid 		<= 1'b1;
 						Retire_branch_taken 	<= Cdb_branch_taken;
-						Retire_store_ready  	<= (Reg_File_Tmp_data_Rs[35:34]==2'b10)? 1: 0;
+						Retire_store_ready  	<= (Data_out3[35:34]==2'b10)? 1: 0;
 						Retire_valid_reg  	<= 1; 
-						
+						RequestRetire		<= 1;	
 						// TODO : invalidate register at regfiletemp 
 						
 						OrderQueueNew_write  	<= 0; // Order queue : write enable
-						increment <= 0;
-					end else 
-						increment <= 1;
-				end else 
-					increment <= 1;
-			end else begin
-				OrderQueueNew_read <= 0;
-			end
-		end
+						increment 		<= !increment;
+						///INVALIDAR el registro :
+						inv_addr_rft	<= Data_out3 [72:68];
+						invalidate_rft	<= 1;
+				end else begin 
+					invalidate_rft		<= 0;	
+					increment 	<= 1;
+					RequestRetire	<= 0;	
+					Retire_valid_reg  	<= 0; 
+					Retire_valid 		<= 1'b0;
+				end
 		
+			end else begin
+				invalidate_rft		<= 0;	
+				increment 	<= 1;
+				OrderQueueNew_read 	<= 0;
+				RequestRetire		<= 0;	
+				Retire_valid_reg  	<= 0; 
+				Retire_valid 		<= 1'b0;
+			end
+*/
+/////////////////////////////////////////////////////////////////////////////////
+/*
+		end else begin
+				Update_entry 		<= 0;
+				increment 		<= 1;
+				RequestRetire		<= 0;	
+				RequestRetire		<= 0;	
+				OrderQueueNew_read 	<= 0;
+				Retire_valid_reg  	<= 0; 
+				Retire_valid 		<= 1'b0;
+			end
+*/	//	end
+		///////////////////////////////////////////////////////////////	
 		if (RequestFlush) begin
 			`ifdef DEBUG_ROB $display("INFO : ROB : Start ----- ------ ----- ----- >FLUSH "); `endif
 			flush_reg		<= 1;
@@ -246,7 +459,8 @@ always @ (posedge clock or posedge reset) begin
 		end else begin
 			flush_reg		<= 0;
 			RequestFlush_reg	<= 0;
-		end 
+		end
+		/* 
 		if (RequestUpdate) begin 
 			`ifdef DEBUG_ROB $display("INFO : ROB : Update_entry %d %d", Cdb_rd_tag,Cdb_data); `endif
  			// solo se hace el update para Cdb_data,Cdb_valid
@@ -256,38 +470,63 @@ always @ (posedge clock or posedge reset) begin
 			OrderQueueNew_write  	<= 0; // Order queue : write enable
 			RequestUpdate_reg 	<= 0;
 			RequestAddNew_reg 	<= 0;
-			AddrRFT			<= Cdb_rd_tag;	
-			NewEntryData 		<= {Dispatch_Rd_reg,Dispatch_pc,Dispatch_inst_type,Cdb_data,Cdb_valid,1'b0};
-		end else if (RequestAddNew) begin 
+			AddrRFT_update		<= Cdb_rd_tag;	
+			NewEntryData_update	<= {Dispatch_Rd_reg,Dispatch_pc,Dispatch_inst_type,Cdb_data,Cdb_valid,1'b1};
+		end
+		*/
+		if (RequestAddNew) begin 
+		//end else if (RequestAddNew) begin 
 			`ifdef DEBUG_ROB $display("INFO : ROB : Add new entry"); `endif
 			Wen_rst 		<= 1; // RST : write enable
 			NewEntry		<= 1; // Register file temp : write enable
 			OrderQueueNew_write 	<= 1; // Order queue : write enable
-			Update_entry 		<= 0; // Register file temp : update antry enable
+			//Update_entry 		<= 0; // Register file temp : update antry enable
 			RequestAddNew_reg	<= 0;
-			RequestUpdate_reg 	<= 0;
+			//RequestUpdate_reg 	<= 0;
 			AddrRFT			<= Dispatch_Rd_tag;	
 			NewEntryData  		<= {Dispatch_Rd_reg,Dispatch_pc,Dispatch_inst_type,32'b0,1'b0,1'b1}; // nuevo valor para le regsiter file temp 
 			OrderQueueDataIn	<= Dispatch_Rd_tag; // nuevo valor para la rder queue;
 		end else begin
+			NewEntry		<= 0; // Register file temp : write enable
+
 		//	increment <= 1;
 		end 
+		if (RequestUpdate && RequestAddNew) begin
+			`ifdef DEBUG_ROB $display("WARRNING : ROB : "); `endif
+			`ifdef DEBUG_ROB $display("WARRNING : ROB : UPDATE AND ADD NEW ENTRY "); `endif
+			`ifdef DEBUG_ROB $display("WARRNING : ROB : "); `endif
+		end
 	end
 end
-
+/*
+always @* begin
+Retire_rd_tag 		= OrderQueue_data_temp;
+Retire_rd_reg 		= Reg_File_Tmp_data_Rs[72:68];
+Retire_data		= Reg_File_Tmp_data_Rs[33: 2];
+Retire_pc		= Reg_File_Tmp_data_Rs[67:36];
+Retire_rd_tag_reg 	= Reg_File_Tmp_data_Rs[72:68];
+Retire_branch		= Cdb_branch;
+Retire_branch_taken 	= Cdb_branch_taken;
+Retire_store_ready  	= (Reg_File_Tmp_data_Rs[35:34]==2'b10)? 1: 0;
+end
+*/
 rst rst (
 	.clock		(clock),
   	.reset		(reset),
+
   	.Rsaddr_rst	(Rs_reg),
   	.Rstag_rst	(Token_tag_rs),
   	.Rsvalid_rst	(Token_valid_rs),
   	.Rtaddr_rst	(Rt_reg),
   	.Rttag_rst	(Token_tag_rt),
   	.Rtvalid_rst	(Token_valid_rt),
+
   	.RB_tag_rst(Retire_rd_tag_reg),
 	.RB_valid_rst(Retire_valid_reg),
+
  	.Wdata_rst	(Dispatch_Rd_tag),
   	.Waddr_rst	(Dispatch_Rd_reg), // TODO: checkar si se direcciona con el registro.
+	
 	.Wen0_rst	(0),
 	.Wen_rst	(Wen_rst),
 	.Wen1_rst	(Wen1_rst),
@@ -318,7 +557,13 @@ regfiletmp regfiletmp (
 	.Rd_Addr1	(Rs_reg_logic),
 	.Data_out2	(Reg_File_Tmp_data_Rt),
 	.Rd_Addr2	(Rt_reg_logic),
-	.flush		(flush)
+	.flush		(flush),
+	.invalidate	(invalidate_rft),
+	.invalidate_addr(inv_addr_rft),
+	.retire_addr	(retire_addr),
+	.Data_out3	(Data_out3),
+	.Waddr_update	(AddrRFT_update),
+	.Data_In_update (NewEntryData_update)
 );
 
 endmodule 
