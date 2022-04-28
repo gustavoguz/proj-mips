@@ -1,0 +1,34 @@
+
+`timescale 1ns/1ns
+
+module tb_Tomasulo();
+  
+  reg Clk;
+  reg Rst;
+  
+  
+  //Clock signal generation
+  initial begin
+  
+    Clk = 1'b0;
+    forever #5 Clk <= ~Clk;
+  
+  end
+  
+  //Reset signal generation
+  initial begin
+    
+    Rst = 1'b1;
+    #3; Rst = 1'b0; 
+      
+  end  
+  
+  
+  Tomasulo Tomasulo_inst(
+  .Clk(Clk),
+  .Rst(Rst)
+  );
+  
+  
+endmodule
+  

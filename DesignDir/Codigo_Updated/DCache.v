@@ -1,0 +1,121 @@
+/****************************************************************************************************/
+// Title      : Data Cacge Verilog File
+// File       : DCache.v
+/****************************************************************************************************/ 
+// Author                : Alejandro Guerena
+// E-Mail                : md679705@iteso.mx
+// Date of last revision : March-2012
+// Notes                 : 
+//
+/****************************************************************************************************/  
+
+module DCache( 
+
+   //`define DATA_32BITS
+   `define DATA_08BITS
+
+   // Port Declarations
+   input                Clk,
+   input                Rst,
+   // Interface with Issue Queue LS
+   input       [31:0]   IssueQue_Data_In,
+   input       [31:0]   IssueQue_Address,
+   input       [ 4:0]   IssueQue_Tag_In,
+   input                IssueQue_Opcode,
+   input                IssueQue_Ready_In,
+   output               IssueQue_Issue_Out,                        
+   // Interface with Issue Unit
+   input                IssueUnit_Issue_In,
+   output      [31:0]   IssueUnit_Data_Out,
+   output      [ 4:0]   IssueUnit_Tag_Out, 
+   output               IssueUnit_Ready_Out
+   );
+   
+   `ifdef DATA_32BITS
+   parameter W_DATA  = 32;
+   `endif
+   `ifdef DATA_08BITS
+   parameter W_DATA  = 8;
+   `endif
+   parameter W_ADDR  = 32 ;  //32
+   parameter M_DEPTH = 128;  //2**W_ADDR  
+   integer i;
+   
+   reg [W_DATA-1:0] mem_data [0:M_DEPTH-1];
+   
+   // Outputs Logic
+   assign IssueUnit_Tag_Out    = IssueQue_Tag_In;  
+   assign IssueUnit_Ready_Out  = IssueQue_Ready_In & IssueQue_Opcode;  
+   assign IssueQue_Issue_Out   = ((~IssueQue_Opcode) & IssueQue_Ready_In) | IssueUnit_Issue_In;
+   //assign IssueQue_Issue_Out = (~IssueQue_Opcode) | IssueUnit_Issue_In; 
+    
+   // Load
+   `ifdef DATA_32BITS
+   assign IssueUnit_Data_Out   = mem_data[IssueQue_Address]; 
+   //assign IssueUnit_Data_Out = (IssueQue_Ready_In && IssueQue_Opcode) ? mem_data[IssueQue_Address] : 32'h00000000;
+   `endif
+   `ifdef DATA_08BITS
+   assign IssueUnit_Data_Out   = {mem_data[IssueQue_Address+3], mem_data[IssueQue_Address+2], mem_data[IssueQue_Address+1], mem_data[IssueQue_Address]}; 
+   //assign IssueUnit_Data_Out = (IssueQue_Ready_In && IssueQue_Opcode) ? {mem_data[IssueQue_Address+3], mem_data[IssueQue_Address+2], mem_data[IssueQue_Address+1], mem_data[IssueQue_Address]} : 32'h00000000;
+   `endif
+   
+   
+   // Mem_Data Sequential Logic
+   always@(posedge Clk, posedge Rst) begin
+   
+      if(Rst) begin
+         
+         `ifdef DATA_32BITS 
+         mem_data[0] <= 4;
+         mem_data[1] <= 5;
+         mem_data[2] <= 3;
+         mem_data[3] <= 9;
+         mem_data[4] <= 15;
+         mem_data[5] <= 1;
+         mem_data[6] <= 2;
+         mem_data[7] <= 20;
+         mem_data[8] <= 10;
+         mem_data[9] <= 7;   
+         for(i = 10; i<M_DEPTH; i = i+1) begin
+            mem_data[i] <= 32'h00000000;    
+         end  
+         `endif
+    
+         `ifdef DATA_08BITS 
+          $display("INIT MEMORY DATA 8 BITS"); 
+          {mem_data[3],  mem_data[2],  mem_data[1],  mem_data[0]}  <= 4; 
+          {mem_data[7],  mem_data[6],  mem_data[5],  mem_data[4]}  <= 5;
+          {mem_data[11], mem_data[10], mem_data[9],  mem_data[8]}  <= 3;
+          {mem_data[15], mem_data[14], mem_data[13], mem_data[12]} <= 9;
+          {mem_data[19], mem_data[18], mem_data[17], mem_data[16]} <= 15;
+          {mem_data[23], mem_data[22], mem_data[21], mem_data[20]} <= 1;
+          {mem_data[27], mem_data[26], mem_data[25], mem_data[24]} <= 2;
+          {mem_data[31], mem_data[30], mem_data[29], mem_data[28]} <= 2;
+          {mem_data[35], mem_data[34], mem_data[33], mem_data[32]} <= 20;
+          {mem_data[39], mem_data[38], mem_data[37], mem_data[36]} <= 7;
+         
+         for(i = 40; i<M_DEPTH; i = i+1) begin
+            mem_data[i] <= 8'h00;    
+         end  
+         `endif
+         
+      end   
+      
+      else begin
+         // Store
+         if( (IssueQue_Ready_In == 1'b1) && (IssueQue_Opcode == 1'b0) ) begin
+            `ifdef DATA_32BITS         
+            mem_data[IssueQue_Address] <= IssueQue_Data_In;
+            `endif
+            `ifdef DATA_08BITS         
+            mem_data[IssueQue_Address]   <= IssueQue_Data_In[ 7:0];
+            mem_data[IssueQue_Address+1] <= IssueQue_Data_In[15:8];
+            mem_data[IssueQue_Address+2] <= IssueQue_Data_In[23:16];
+            mem_data[IssueQue_Address+3] <= IssueQue_Data_In[31:24];
+            `endif            
+         end         
+      end        
+    
+   end
+      
+endmodule
